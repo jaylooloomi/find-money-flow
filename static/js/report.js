@@ -276,6 +276,8 @@ export function reportText(date, index, list, rows, hotStats = null, shapes = []
 
 const CHASE_TIP = '落後股今天帶量上漲（量比 ≥ 1.5），而且平常跟這組高度連動（20 日相關 ≥ 0.6）。回測 60 天（study 分支 exp8）：這類隔天平均跑輸大盤 1.63%，只有 22% 收紅；前後半段分開驗證，隔天都一樣弱（勝率 23%、20%），但 5 天後方向不一致——只適合當「隔天別追」的提醒';
 
+const CROSS_TIP = '同步那天，這檔同時和兩批「完全不同的股票」各自同步（不是同一群股票換個分類），像是多路資金都在找它。回測 60 天（research/money_flow/intersection.py）：這類在回測 10 日線時，10 天後中位數跑贏大盤 7.4%（勝率 82%，40 筆），其他只有 −1.0%（45%）；但 15 筆集中在 7/31 同一天，扣掉後中位數 +2.9%（73%）。前後半段都成立，樣本仍少。只是統計，不是交易建議';
+
 /** 回測 10 日線觀察名單 (research/exp8): members of a tight-sync group of the last 10 days at or under
  *  their 10-day average for the first time today. Shown only, not a recommendation. */
 export function pullbackHtml(res) {
@@ -283,7 +285,7 @@ export function pullbackHtml(res) {
   if (!list.length) return '';
   const rows = list
     .map((x) => `<li><button type="button" class="rp-stock" data-code="${escapeHtml(x.code)}">${escapeHtml(x.name)}</button>
-      <small class="muted">收 ${x.close}／10 日線 ${x.ma}（${fmtPct(x.gap_pct)}）；${escapeHtml(x.since.slice(5))} 與 ${escapeHtml(x.with.join('、'))} 同步</small></li>`)
+      ${x.cross ? `<b class="up" title="${escapeHtml(CROSS_TIP)}">⭐ 跨組交集</b> ` : ''}<small class="muted">收 ${x.close}／10 日線 ${x.ma}（${fmtPct(x.gap_pct)}）；${escapeHtml(x.since.slice(5))} 與 ${escapeHtml(x.with.join('、'))} 同步</small></li>`)
     .join('');
   return `<div class="rp-pull" title="過去 10 個交易日內同步很強（證據 ✓ ≥ 4，或扣指數 R ≥ 0.6）的組合成員，今天第一次收在 10 日線以下：等下一波資金，而不是追同步當天。回測 60 天（study 分支 exp8）：在這種回測點買，10 天後平均跑贏大盤 4.31%（勝率 55%），同步當天就買只有 1.63%（42%）。只是統計，不是交易建議">
     <h3 class="rp-h">回測 10 日線 <small class="muted">${list.length} 檔；同步族群的觀察名單</small></h3><ul class="rp-hot-list">${rows}</ul></div>`;

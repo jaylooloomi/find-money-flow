@@ -371,3 +371,20 @@ def test_pullbacks_first_touch_of_the_10_day_average_after_a_tight_sync():
     assert got[0]["with"] == ["乙", "丙"] and got[0]["gap_pct"] < 0
     assert pullbacks(days[-1], days, [(days[0], members)], closes) == []  # the sync is older than 10 days
     assert is_tight_sync({"excess_r": 0.65}) and not is_tight_sync({"excess_r": 0.5, "evidence": {}})
+
+
+def test_cross_members_and_the_pullback_mark():
+    from datetime import timedelta
+
+    from openmarket.history.linkage import cross_members, pullbacks
+
+    g = lambda *cs: {"members": [{"code": c} for c in cs]}  # noqa: E731
+    # A moves with B and, separately, with C+D: a 交集; B is in two groups sharing partner A: not
+    assert cross_members([g("A", "B"), g("A", "C", "D"), g("A", "B", "E")]) == {"A"}
+    assert cross_members([g("A", "B"), g("B", "A")]) == set()  # one member set found twice
+    days = [date(2026, 9, 1) + timedelta(days=i) for i in range(25)]
+    closes = {"A": {d: 100 + i for i, d in enumerate(days)}}
+    closes["A"][days[-1]] = 100
+    got = pullbacks(days[-1], days, [(days[-5], [{"code": "A", "name": "甲"}])], closes, {days[-5]: {"A"}})
+    assert got[0]["cross"] is True
+    assert pullbacks(days[-1], days, [(days[-5], [{"code": "A", "name": "甲"}])], closes)[0]["cross"] is False

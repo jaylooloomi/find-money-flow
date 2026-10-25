@@ -456,11 +456,29 @@ def is_tight_sync(group: Mapping) -> bool:
     return evidence_yes(group) >= TIGHT_SYNC_EVIDENCE or (group.get("excess_r") or 0) >= TIGHT_SYNC_EXCESS
 
 
-def pullbacks(day: date, days: list[date], synced: list[tuple[date, list[dict]]], closes: Mapping[str, Mapping[date, float]]) -> list[dict]:
+def cross_members(groups: list[dict]) -> set[str]:
+    """跨組交集 (research/money_flow/intersection.py): the codes in 2+ of a day's groups (one per member set)
+    whose other members do not overlap at all — moving with two different sets of stocks, not one set under
+    two labels."""
+    seen, by = set(), {}
+    for g in groups:
+        key = tuple(sorted(m["code"] for m in g["members"]))
+        if key in seen:
+            continue
+        seen.add(key)
+        for c in key:
+            by.setdefault(c, []).append(set(key) - {c})
+    return {c for c, others in by.items()
+            if any(not (others[i] & others[j]) for i in range(len(others)) for j in range(i + 1, len(others)))}
+
+
+def pullbacks(day: date, days: list[date], synced: list[tuple[date, list[dict]]], closes: Mapping[str, Mapping[date, float]],
+              cross: Mapping[date, set[str]] | None = None) -> list[dict]:
     """回測均線觀察名單 (research/exp8): members of a tight-sync group of the PULLBACK_DAYS trading days before
     `day` whose close today is at or under their PULLBACK_MA-day average for the first time since the group
     — waiting for the next wave rather than chasing the sync. days: trading days, oldest first; synced:
-    [(group day, members [{code, name}])]; closes: {code: {day: close}}. The deepest under the average first."""
+    [(group day, members [{code, name}])]; closes: {code: {day: close}}; cross: {group day: 跨組交集 codes}
+    (cross_members), marked on each stock. The deepest under the average first."""
     if day not in days:
         return []
     i = days.index(day)
@@ -484,7 +502,8 @@ def pullbacks(day: date, days: list[date], synced: list[tuple[date, list[dict]]]
                 close, avg = closes[c][day], ma(c, i)
                 if c not in out or gday > date.fromisoformat(out[c]["since"]):
                     out[c] = {"code": c, "name": m.get("name", c), "since": gday.isoformat(), "with": [x.get("name", x["code"]) for x in members if x["code"] != c],
-                              "close": close, "ma": round(avg, 2), "gap_pct": round((close / avg - 1) * 100, 2)}
+                              "close": close, "ma": round(avg, 2), "gap_pct": round((close / avg - 1) * 100, 2),
+                              "cross": c in (cross or {}).get(gday, set())}
     return sorted(out.values(), key=lambda x: x["gap_pct"])
 
 

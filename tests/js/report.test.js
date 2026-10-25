@@ -213,3 +213,9 @@ test('pullbackHtml and the ⚠ on a laggard chasing on volume', () => {
   assert.equal((lag.match(/⚠/g) || []).length, 1);
   assert.match(highlights([], [], [], [{ name: '欣興' }]).join(), /回測 10 日線（同步族群的觀察名單）：欣興/);
 });
+
+test('pullbackHtml marks a 跨組交集', () => {
+  const x = { code: '1', name: '甲', close: 10, ma: 11, gap_pct: -9.1, since: '2026-10-16', with: ['乙'] };
+  assert.match(pullbackHtml({ stocks: [{ ...x, cross: true }] }), /⭐ 跨組交集<\/b>/);
+  assert.doesNotMatch(pullbackHtml({ stocks: [x] }), /跨組交集/);
+});

@@ -26,7 +26,7 @@ from .explain import explain_day
 from .history.linkage import (
     pearson,
     INTRADAY_HIGH_R, INTRADAY_LOW_R, bucket_closes, daily_linkage, fmt_minute, pair_matrix, peak_minute_from_bars, peak_minute_from_ticks,
-    align_bars, amplitude_pct, limit_down_pct, limit_up_pct, minute_bars, turnover_rate, peak_stats, tick_bars, with_close_bar, race_points, returns, locked_level, daily_k, index_k, daytrade_ratios, daytrade_group, evidence_class, evidence_yes, hot_class, is_tight_sync, next_day_stats, pullbacks,
+    align_bars, amplitude_pct, limit_down_pct, limit_up_pct, minute_bars, turnover_rate, peak_stats, tick_bars, with_close_bar, race_points, returns, locked_level, daily_k, index_k, cross_members, daytrade_ratios, daytrade_group, evidence_class, evidence_yes, hot_class, is_tight_sync, next_day_stats, pullbacks,
     PULLBACK_DAYS, PULLBACK_MA, DAYTRADE_BASE_DAYS, DAYTRADE_HOT, top_members, verdict_r, verdict_timing,
 )
 from .history.finder import FINDER_VERSION, INST_STREAK_DAYS, INTRADAY_BASES, FinderParams, daily_series, flag_chasers, laggards, volume_ratio, inst_streak, inst_summary, margin_changes, margin_summary, pair_extras, persistence, run_search
@@ -820,15 +820,17 @@ def create_app(
         days_all = sorted(store.trading_dates(up_to=d, limit=PULLBACK_DAYS + PULLBACK_MA + 5))
         key = p.key() + "|" + ",".join(sorted(p.groupings))
         window = set(days_all[-(PULLBACK_DAYS + 1):-1])
-        synced = []
+        synced, day_groups = [], {}
         for method in ("known", "new"):
             for gd, res in store.finder_days(method, key, any_version=True, min_version=FINDER_VERSION, groupings=p.groupings):
                 if gd in window:
                     synced += [(gd, g["members"]) for g in res.get("groups", []) if is_tight_sync(g)]
+                    day_groups.setdefault(gd, []).extend(res.get("groups", []))
+        cross = {gd: cross_members(gs) for gd, gs in day_groups.items()}
         codes = sorted({m["code"] for _, ms in synced for m in ms})
         quotes = store.quotes(days_all, codes)
         closes = {c: {x: q[c]["close"] for x, q in quotes.items() if c in q and q[c].get("close")} for c in codes}
-        return {"date": d.isoformat(), "synced_groups": len(synced), "stocks": pullbacks(d, days_all, synced, closes)}
+        return {"date": d.isoformat(), "synced_groups": len(synced), "stocks": pullbacks(d, days_all, synced, closes, cross)}
 
     @app.get("/api/history/index-race")
     async def index_race_day(day: str = Query(..., alias="date")) -> dict:
