@@ -23,3 +23,7 @@ test('coverageHtml: missing 淨值 in red, gaps in yellow', () => {
 test('mdHtml: an image line is left to the panel', () => {
   assert.equal(mdHtml('![圖](a.svg)'), '');
 });
+
+test('mdHtml: a quote line is a muted paragraph', () => {
+  assert.equal(mdHtml('> 註'), '<p class="muted">註</p>');
+});

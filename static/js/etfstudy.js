@@ -32,6 +32,8 @@ export function mdHtml(md) {
     } else if (/^#{1,4} /.test(l)) {
       const n = Math.min(4, l.match(/^#+/)[0].length + 1);
       out.push(`<h${n}>${inline(l.replace(/^#+ /, ''))}</h${n}>`);
+    } else if (/^> /.test(l)) {
+      out.push(`<p class="muted">${inline(l.slice(2))}</p>`);
     } else if (l.trim()) {
       out.push(`<p>${inline(l)}</p>`);
     }
