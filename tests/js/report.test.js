@@ -219,3 +219,12 @@ test('pullbackHtml marks a 跨組交集', () => {
   assert.match(pullbackHtml({ stocks: [{ ...x, cross: true }] }), /⭐ 跨組交集<\/b>/);
   assert.doesNotMatch(pullbackHtml({ stocks: [x] }), /跨組交集/);
 });
+
+test('highlightsHtml: the names in 今天重點 are buttons for the chart area', async () => {
+  const { highlightsHtml, nameIndex } = await import('../../static/js/report.js');
+  const names = nameIndex([{ members: [{ code: '3037', name: '欣興' }, { code: '8046', name: '南電' }] }], [], [{ code: '2492', name: '華新科' }]);
+  const html = highlightsHtml(['同步：欣興、南電 <x>', '回測：華新科'], names);
+  assert.match(html, /<button type="button" class="rp-stock rp-inline" data-code="3037">欣興<\/button>、<button[^>]*data-code="8046">南電<\/button> &lt;x&gt;/);
+  assert.match(html, /data-code="2492">華新科/);
+  assert.equal(highlightsHtml(['只有文字'], {}), '<div class="rp-top"><b>今天重點</b><ul><li>只有文字</li></ul></div>');
+});

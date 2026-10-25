@@ -388,3 +388,19 @@ def test_cross_members_and_the_pullback_mark():
     got = pullbacks(days[-1], days, [(days[-5], [{"code": "A", "name": "甲"}])], closes, {days[-5]: {"A"}})
     assert got[0]["cross"] is True
     assert pullbacks(days[-1], days, [(days[-5], [{"code": "A", "name": "甲"}])], closes)[0]["cross"] is False
+
+
+def test_stock_history_series_carries_the_daily_candle():
+    from datetime import datetime
+
+    from openmarket.history.metrics import stock_history
+    from openmarket.history.store import HistoryStore
+    import tempfile, pathlib
+
+    with tempfile.TemporaryDirectory() as tmp:
+        s = HistoryStore(pathlib.Path(tmp) / "h.sqlite")
+        d = date(2026, 3, 2)
+        s.save_day(d, [{"code": "A", "name": "甲", "market": "上市", "industry": "X", "kind": "stock", "open": 9.8, "high": 10.5, "low": 9.7,
+                        "close": 10.0, "prev_close": 9.9, "change": 0.1, "change_pct": 1.0, "volume_shares": 123000}], datetime(2026, 3, 2, 15))
+        row = stock_history(s, "A", d, 5)["series"][0]
+        assert (row["open"], row["high"], row["low"], row["close"], row["volume_lots"]) == (9.8, 10.5, 9.7, 10.0, 123.0)

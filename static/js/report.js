@@ -4,6 +4,7 @@
 
 import { escapeHtml, fmtPct } from './transform.js';
 import { evidenceCount, groupEvidenceItems, isStrong, SURGE_X, surgeMultiple, surgeText } from './evidence.js';
+import { mountStockView } from './stockview.js';
 
 export const DUMP_VOL = 2; // 出貨: a member that fell on 2× its 5-day volume the day the group vanished
 export const GONE_SHOWN = 12; // 消失 rows listed before 「其餘 N 組」
@@ -154,8 +155,30 @@ export function shapeHtml(results) {
     <h3 class="rp-h">高點錯開但走勢一樣 <small class="muted">${list.length} 對；可能分批推進</small></h3><ul class="rp-hot-list">${rows}</ul></div>`;
 }
 
-export function highlightsHtml(lines) {
-  return lines.length ? `<div class="rp-top"><b>今天重點</b><ul>${lines.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul></div>` : '';
+export function highlightsHtml(lines, names = {}) {
+  // names {name: code}: each known stock name in a line becomes a button (the chart area shows it)
+  const known = Object.keys(names).filter(Boolean).sort((a, b) => b.length - a.length);
+  const re = known.length ? new RegExp(known.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g') : null;
+  const line = (t) => {
+    if (!re) return escapeHtml(t);
+    let out = '';
+    let last = 0;
+    for (const m of t.matchAll(re)) {
+      out += escapeHtml(t.slice(last, m.index)) + `<button type="button" class="rp-stock rp-inline" data-code="${escapeHtml(names[m[0]])}">${escapeHtml(m[0])}</button>`;
+      last = m.index + m[0].length;
+    }
+    return out + escapeHtml(t.slice(last));
+  };
+  return lines.length ? `<div class="rp-top"><b>今天重點</b><ul>${lines.map((t) => `<li>${line(t)}</li>`).join('')}</ul></div>` : '';
+}
+
+/** {name: code} of every stock the report mentions (groups, shape pairs, 回測 list), for highlightsHtml. */
+export function nameIndex(list, shapes = [], pulls = []) {
+  const out = {};
+  for (const x of list) for (const m of x.members || []) out[m.name] = m.code;
+  for (const s of shapes) for (const m of s.members || []) out[m.name] = m.code;
+  for (const p of pulls) out[p.name] = p.code;
+  return out;
 }
 
 /** The 🔥 groups, the furthest above their usual 當沖比 first (research/exp7: the likeliest to fade). */
@@ -354,9 +377,13 @@ export function mountReportPanel(container, { onStock, query, condText }) {
   sec.className = 'panel hReport';
   sec.innerHTML = `<div class="panel-h"><b>盤後報告</b><span class="muted" id="rpNote"></span>
       <button type="button" class="icon wide" id="rpCopy" style="margin-left:auto" title="把報告複製成純文字">複製成文字</button></div>
+    <div class="rp-head"></div><div class="rp-viewer"></div>
     <div class="rp-body"><p class="hint">選一天看報告。</p></div>`;
   container.append(sec);
   const body = sec.querySelector('.rp-body');
+  const headEl = sec.querySelector('.rp-head');
+  // the chart area sits outside the parts redrawn as the data arrives, so a clicked stock stays drawn
+  const viewer = mountStockView(sec.querySelector('.rp-viewer'), { onCard: (code) => onStock?.(code) });
   const state = { ticket: 0, text: '', allGone: false, last: null };
 
   async function result(date, method, storedOnly) {
@@ -376,6 +403,9 @@ export function mountReportPanel(container, { onStock, query, condText }) {
     state.last = null; // nothing of the previous date may be drawn again (a late next-day reply)
     sec.querySelector('#rpNote').textContent = `找法1＋找法2，用分頁2 的條件：${condText ? condText() : '預設'}`;
     body.innerHTML = '<p class="hint">整理中…</p>';
+    headEl.innerHTML = '';
+    state.date = date;
+    viewer.setDate(date);
     const i = days.indexOf(date);
     const dates = days.slice(i, i + TRACK_DAYS).reverse(); // oldest → the report day
     state.dayResults = [];
@@ -498,8 +528,10 @@ export function mountReportPanel(container, { onStock, query, condText }) {
     const going = rows.filter((r) => r.streak >= 1 && r.cells.at(-1) != null).length;
     const metric = (label, value) => `<div class="rp-metric"><small>${label}</small><b>${value}</b></div>`;
     // 摘要 across the top; the day's groups (A1) on the left, 跨天追蹤 (A3) on the right
-    body.innerHTML = `<div class="rp-metrics">${metric('找到群組', list.length)}${metric('證據強', strong)}${metric('連續出現', going)}${metric('大盤／櫃買', bench.map((b) => `<span class="${b.change_pct > 0 ? 'up' : 'down'}">${fmtPct(b.change_pct)}</span>`).join(' / ') || '—')}</div>
-      ${highlightsHtml(highlights(list, rows, shapeList(state.dayResults || []), state.pullbacks?.stocks || []))}
+    headEl.innerHTML = `<div class="rp-metrics">${metric('找到群組', list.length)}${metric('證據強', strong)}${metric('連續出現', going)}${metric('大盤／櫃買', bench.map((b) => `<span class="${b.change_pct > 0 ? 'up' : 'down'}">${fmtPct(b.change_pct)}</span>`).join(' / ') || '—')}</div>`;
+    const shapes = shapeList(state.dayResults || []);
+    const pulls = state.pullbacks?.stocks || [];
+    body.innerHTML = `${highlightsHtml(highlights(list, rows, shapes, pulls), nameIndex(list, shapes, pulls))}
       <div class="rp-cols"><div class="rp-left">
         ${hotHtml(list, hotStats, state.wide)}
         ${shapeHtml(state.dayResults || [])}
@@ -520,7 +552,11 @@ export function mountReportPanel(container, { onStock, query, condText }) {
       return;
     }
     const b = e.target.closest('.rp-stock');
-    if (b) onStock?.(b.dataset.code);
+    if (!b || !state.date) return;
+    // the name is the button's own text (before the % in <small>)
+    const name = (b.childNodes[0]?.textContent || b.textContent).trim().split(/\s/)[0];
+    viewer.show(b.dataset.code, name, state.date);
+    viewer.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
   sec.querySelector('#rpCopy').addEventListener('click', async (e) => {
     try {

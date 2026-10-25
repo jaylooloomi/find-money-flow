@@ -346,7 +346,8 @@ def stock_history(store: HistoryStore, code: str, to: date, days: int = 20) -> d
         "turnover_100m": last["turnover_yuan"] / 1e8 if last["turnover_yuan"] is not None else None,
         "market_cap": last["market_cap"],
         "period_pct": (last["close"] / first_close - 1) * 100 if last["close"] and first_close else None,
-        "series": [{"date": r["date"], "close": r["close"], "change_pct": r["change_pct"]} for r in rows],
+        "series": [{"date": r["date"], "close": r["close"], "change_pct": r["change_pct"], "open": r.get("open"), "high": r.get("high"),
+                    "low": r.get("low"), "volume_lots": r["volume_shares"] / 1000 if r.get("volume_shares") is not None else None} for r in rows],
     }
 
 
