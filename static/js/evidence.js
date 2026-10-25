@@ -98,7 +98,7 @@ export function evidenceItems(f, ext, ev) {
  * the 300 most traded, 15 days); 隨機 is 10% by its own definition (above the 90th percentile).
  * Shown only — the ✓ count is unchanged.
  */
-export const BASE_RATES = { excess: 0.007, baseline: 0.1, burst: 0.027, sync: 0.048, samedir: 0.058, chips: 0.513 };
+export const BASE_RATES = { excess: 0.007, baseline: 0.1, burst: 0.027, sync: 0.048, samedir: 0.058, chips: 0.513, shape: 0.053 };
 // 同爆量 at ≥ 3 bursts and ≥ 3 × chance (finder.BURST_CO / BURST_X; methods/m6: random 2.7%, was 41.8% at 2 and 2)
 export const BURST_CO = 3;
 export const BURST_X = 3;
