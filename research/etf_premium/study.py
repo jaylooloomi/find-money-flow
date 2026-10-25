@@ -487,6 +487,8 @@ def main() -> None:
     sys.stdout.reconfigure(encoding="utf-8")
     nav_src = sys.argv[sys.argv.index("--nav") + 1] if "--nav" in sys.argv else "mops"
     base = Spec(nav=nav_src)
+    if "--ext" in sys.argv:  # the appendix: the years before the main study only, an independent sample
+        base = replace(base, start="20030101", end="20191231")
     cal, tr = load_calendar()
     etfs = load(base, cal)
     OUT.mkdir(exist_ok=True)

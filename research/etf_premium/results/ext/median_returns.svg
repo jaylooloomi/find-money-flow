@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="sans-serif" font-size="12">
+<rect width="640" height="360" fill="#ffffff"/>
+<line x1="56" x2="530" y1="116.2" y2="116.2" stroke="#999" stroke-dasharray="3 3"/>
+<text x="50" y="246.9" text-anchor="end" fill="#555">-10%</text>
+<text x="50" y="120.2" text-anchor="end" fill="#555">0%</text>
+<text x="56.0" y="338" text-anchor="middle" fill="#555">5 日</text>
+<text x="150.8" y="338" text-anchor="middle" fill="#555">10 日</text>
+<text x="245.6" y="338" text-anchor="middle" fill="#555">20 日</text>
+<text x="340.4" y="338" text-anchor="middle" fill="#555">60 日</text>
+<text x="435.2" y="338" text-anchor="middle" fill="#555">120 日</text>
+<text x="530.0" y="338" text-anchor="middle" fill="#555">240 日</text>
+<polyline fill="none" stroke="#e5484d" stroke-width="2" points="56.0,75.6 150.8,129.4 245.6,93.3 340.4,98.1 435.2,44.4 530.0,86.0"/>
+<circle cx="56.0" cy="75.6" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<circle cx="150.8" cy="129.4" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<circle cx="245.6" cy="93.3" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<circle cx="340.4" cy="98.1" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<circle cx="435.2" cy="44.4" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<circle cx="530.0" cy="86.0" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<text x="538" y="90.0" fill="#e5484d">溢價組</text>
+<polyline fill="none" stroke="#8b8d98" stroke-width="2" points="56.0,111.2 150.8,115.1 245.6,104.7 340.4,96.5 435.2,107.7 530.0,83.5"/>
+<circle cx="56.0" cy="111.2" r="4" fill="#fff" stroke="#8b8d98" stroke-width="2"/>
+<circle cx="150.8" cy="115.1" r="4" fill="#fff" stroke="#8b8d98" stroke-width="2"/>
+<circle cx="245.6" cy="104.7" r="4" fill="#fff" stroke="#8b8d98" stroke-width="2"/>
+<circle cx="340.4" cy="96.5" r="4" fill="#fff" stroke="#8b8d98" stroke-width="2"/>
+<circle cx="435.2" cy="107.7" r="4" fill="#fff" stroke="#8b8d98" stroke-width="2"/>
+<circle cx="530.0" cy="83.5" r="4" fill="#fff" stroke="#8b8d98" stroke-width="2"/>
+<text x="538" y="87.5" fill="#8b8d98">中性組</text>
+<polyline fill="none" stroke="#3e9b4f" stroke-width="2" points="56.0,160.9 150.8,207.0 245.6,278.6 340.4,299.6 435.2,297.9 530.0,87.3"/>
+<circle cx="56.0" cy="160.9" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<circle cx="150.8" cy="207.0" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<circle cx="245.6" cy="278.6" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<circle cx="340.4" cy="299.6" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<circle cx="435.2" cy="297.9" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<circle cx="530.0" cy="87.3" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<text x="538" y="91.3" fill="#3e9b4f">折價組</text>
+<text x="56" y="16" fill="#333">淨值含息報酬中位數（空心點：事件數 &lt; 30）</text></svg>

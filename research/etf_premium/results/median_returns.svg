@@ -1,37 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" font-family="sans-serif" font-size="12">
 <rect width="640" height="360" fill="#ffffff"/>
-<line x1="56" x2="530" y1="288.6" y2="288.6" stroke="#999" stroke-dasharray="3 3"/>
-<text x="50" y="292.6" text-anchor="end" fill="#555">0%</text>
-<text x="50" y="190.4" text-anchor="end" fill="#555">10%</text>
-<text x="50" y="88.3" text-anchor="end" fill="#555">20%</text>
+<line x1="56" x2="530" y1="289.1" y2="289.1" stroke="#999" stroke-dasharray="3 3"/>
+<text x="50" y="293.1" text-anchor="end" fill="#555">0%</text>
+<text x="50" y="196.2" text-anchor="end" fill="#555">10%</text>
+<text x="50" y="99.3" text-anchor="end" fill="#555">20%</text>
 <text x="56.0" y="338" text-anchor="middle" fill="#555">5 日</text>
 <text x="150.8" y="338" text-anchor="middle" fill="#555">10 日</text>
 <text x="245.6" y="338" text-anchor="middle" fill="#555">20 日</text>
 <text x="340.4" y="338" text-anchor="middle" fill="#555">60 日</text>
 <text x="435.2" y="338" text-anchor="middle" fill="#555">120 日</text>
 <text x="530.0" y="338" text-anchor="middle" fill="#555">240 日</text>
-<polyline fill="none" stroke="#e5484d" stroke-width="2" points="56.0,286.1 150.8,259.7 245.6,223.2 340.4,165.0 435.2,210.1 530.0,299.6"/>
-<circle cx="56.0" cy="286.1" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
-<circle cx="150.8" cy="259.7" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
-<circle cx="245.6" cy="223.2" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
-<circle cx="340.4" cy="165.0" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
-<circle cx="435.2" cy="210.1" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<polyline fill="none" stroke="#e5484d" stroke-width="2" points="56.0,286.8 150.8,261.7 245.6,227.1 340.4,171.9 435.2,214.7 530.0,299.6"/>
+<circle cx="56.0" cy="286.8" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<circle cx="150.8" cy="261.7" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<circle cx="245.6" cy="227.1" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<circle cx="340.4" cy="171.9" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
+<circle cx="435.2" cy="214.7" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
 <circle cx="530.0" cy="299.6" r="4" fill="#fff" stroke="#e5484d" stroke-width="2"/>
 <text x="538" y="303.6" fill="#e5484d">溢價組</text>
-<polyline fill="none" stroke="#8b8d98" stroke-width="2" points="56.0,251.6 150.8,266.1 245.6,208.4 340.4,171.3 435.2,112.2 530.0,165.5"/>
-<circle cx="56.0" cy="251.6" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
-<circle cx="150.8" cy="266.1" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
-<circle cx="245.6" cy="208.4" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
-<circle cx="340.4" cy="171.3" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
-<circle cx="435.2" cy="112.2" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
-<circle cx="530.0" cy="165.5" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
-<text x="538" y="169.5" fill="#8b8d98">中性組</text>
-<polyline fill="none" stroke="#3e9b4f" stroke-width="2" points="56.0,212.5 150.8,253.2 245.6,191.3 340.4,129.3 435.2,59.2 530.0,44.4"/>
-<circle cx="56.0" cy="212.5" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
-<circle cx="150.8" cy="253.2" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
-<circle cx="245.6" cy="191.3" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
-<circle cx="340.4" cy="129.3" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
-<circle cx="435.2" cy="59.2" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<polyline fill="none" stroke="#8b8d98" stroke-width="2" points="56.0,254.0 150.8,268.7 245.6,213.3 340.4,180.3 435.2,121.8 530.0,182.8"/>
+<circle cx="56.0" cy="254.0" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
+<circle cx="150.8" cy="268.7" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
+<circle cx="245.6" cy="213.3" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
+<circle cx="340.4" cy="180.3" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
+<circle cx="435.2" cy="121.8" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
+<circle cx="530.0" cy="182.8" r="4" fill="#8b8d98" stroke="#8b8d98" stroke-width="2"/>
+<text x="538" y="186.8" fill="#8b8d98">中性組</text>
+<polyline fill="none" stroke="#3e9b4f" stroke-width="2" points="56.0,216.9 150.8,255.6 245.6,196.9 340.4,137.9 435.2,46.4 530.0,44.4"/>
+<circle cx="56.0" cy="216.9" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<circle cx="150.8" cy="255.6" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<circle cx="245.6" cy="196.9" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<circle cx="340.4" cy="137.9" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
+<circle cx="435.2" cy="46.4" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
 <circle cx="530.0" cy="44.4" r="4" fill="#fff" stroke="#3e9b4f" stroke-width="2"/>
 <text x="538" y="48.4" fill="#3e9b4f">折價組</text>
 <text x="56" y="16" fill="#333">淨值含息報酬中位數（空心點：事件數 &lt; 30）</text></svg>
