@@ -58,12 +58,13 @@ test('groupEvidenceItems / groupEvidenceHtml / isStrong: an N group\'s checks', 
   };
   const items = groupEvidenceItems(g);
   const c = evidenceCount(items);
-  assert.deepEqual(c, { yes: 6, known: 7 });
+  assert.deepEqual(c, { yes: 5, known: 6 }); // 籌碼 ✓ is shown, not counted (methods/m6)
   assert.equal(isStrong(c), true);
   assert.equal(isStrong({ yes: 4, known: 4 }), false);
   const html = groupEvidenceHtml(g);
   assert.match(html, /class="fd-ev strong"/);
-  assert.match(html, /🧾 證據 <b>6<\/b>\/7/);
+  assert.match(html, /🧾 證據 <b>5<\/b>\/6/);
+  assert.doesNotMatch(html, /✓籌碼/); // not among the counted tags
   assert.match(html, /<span class="down">✗同爆量<\/span>/);
   assert.match(html, /扣指數：扣掉各自的類股／大盤後分時 R 0\.55/);
   assert.equal(groupEvidenceHtml({}), ''); // an old result without evidence: no line
@@ -89,11 +90,11 @@ test('groupEvidenceItems: 同分點 from the stored 分點, — until the snapsh
 
 test('the base rate of each check rides along (shown only, the count is unchanged)', async () => {
   const { BASE_RATES, baseText, evidenceHtml } = await import('../../static/js/evidence.js');
-  assert.equal(baseText('burst'), '隨機配對約 40% 也會出現');
+  assert.equal(baseText('burst'), '隨機配對約 3% 也會出現'); // at ≥ 3 bursts and ≥ 3 × chance
   assert.equal(baseText('excess'), '隨機配對約 <1% 也會出現');
   assert.equal(baseText('theme'), ''); // not measured
   const html = evidenceHtml([{ key: 'burst', ok: true, label: '同爆量', detail: 'x' }, { key: 'theme', ok: true, label: '題材', detail: 'y' }]);
-  assert.match(html, /同爆量 <small class="muted">x<\/small> <small class="muted ev-base"[^>]*>（隨機配對約 40% 也會出現）<\/small>/);
+  assert.match(html, /同爆量 <small class="muted">x<\/small> <small class="muted ev-base"[^>]*>（隨機配對約 3% 也會出現）<\/small>/);
   assert.match(html, /<b>2<\/b>／2 項支持/); // still 2 of 2
   assert.ok(Object.values(BASE_RATES).every((v) => v > 0 && v < 1));
 });

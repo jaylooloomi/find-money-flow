@@ -23,7 +23,9 @@ test('mergeGroups: one entry per member set across 找法1/2, the better support
 test('motiveOf: the readings come from the evidence, strongest first, at most two', () => {
   const g = grp(['1', '2'], {}, { branches: { ok: true, common: [{ name: '美商高盛', ranks: { 1: 2, 2: 2 } }] }, inst: { lots: 1200 }, daytrade: { hot: true } });
   const r = motiveOf(g, groupEvidenceItems(g));
-  assert.deepEqual(r.map((x) => x.label), ['同分點布局', '隔日沖熱錢']);
+  assert.deepEqual(r.map((x) => x.label), ['同分點布局', '當沖偏高（平常就高）']); // no usual known: not 突然湧入
+  const surge = grp(['1', '2'], {}, { daytrade: { hot: true, by_code: { 1: 60, 2: 60 }, base: { 1: 30, 2: 40 } } });
+  assert.match(motiveOf(surge, groupEvidenceItems(surge))[0].text, /當沖比是平常的 1\.8 倍/); // 2× and 1.5×
   assert.match(r[0].text, /美商高盛 同時買超 2 檔/);
   const bare = grp(['1', '2']);
   assert.deepEqual(motiveOf(bare, groupEvidenceItems(bare)).map((x) => x.label), ['只有價格同步']);
@@ -158,7 +160,7 @@ test('reportText lists 高點錯開但走勢一樣 too', () => {
 test('hotHtml splits 🔥 into 突然湧入 and 平常就這樣 when the server does', () => {
   const x = (n) => ({ groups: n, stocks: n * 2, gap: 1, close: -1, excess: -1, intraday: -2, fade: 60, down: 50 });
   const html = hotHtml([], null, { days: 10, first: 'a', last: 'b', stats: { hot: x(5), surge: x(2), habitual: x(3), rest: x(9) } });
-  assert.match(html, /　突然湧入（≥ 平常 2 倍）<\/td><td>2／4/);
+  assert.match(html, /　突然湧入（≥ 平常 1\.5 倍）<\/td><td>2／4/);
   assert.match(html, /　平常就這樣<\/td><td>3／6/);
 });
 

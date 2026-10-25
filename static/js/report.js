@@ -3,7 +3,7 @@
 // opening it starts no search for past days. Pure functions first (node --test), the panel last.
 
 import { escapeHtml, fmtPct } from './transform.js';
-import { evidenceCount, groupEvidenceItems, isStrong, surgeMultiple, surgeText } from './evidence.js';
+import { evidenceCount, groupEvidenceItems, isStrong, SURGE_X, surgeMultiple, surgeText } from './evidence.js';
 
 export const DUMP_VOL = 2; // 出貨: a member that fell on 2× its 5-day volume the day the group vanished
 export const GONE_SHOWN = 12; // 消失 rows listed before 「其餘 N 組」
@@ -36,7 +36,13 @@ export function motiveOf(g, items) {
   const br = g.branches?.common?.[0];
   if (ok('branch') && br) out.push({ label: '同分點布局', text: `${br.name} 同時買超 ${Object.keys(br.ranks).length} 檔，像同一批資金布局` });
   if (ok('relation')) out.push({ label: '集團／持股', text: g.rel_group ? `同屬以 ${g.rel_group.leader_name} 為首的集團` : '成員之間有轉投資或董監關係' });
-  if (g.daytrade?.hot) out.push({ label: '隔日沖熱錢', text: '當沖比偏高，短線資金多，明天容易倒貨' });
+  if (g.daytrade?.hot) {
+    // research/exp7: only the ones well above their usual faded the next day; most 🔥 are day-traded this much anyway
+    const x = surgeMultiple(g.daytrade);
+    out.push(x != null && x >= SURGE_X
+      ? { label: '隔日沖熱錢突然湧入', text: `當沖比是平常的 ${x.toFixed(1)} 倍，回測這類隔天常開高走低` }
+      : { label: '當沖偏高（平常就高）', text: '這幾檔本來就常被當沖，回測隔天倒貨的傾向不明顯' });
+  }
   if (ok('chips') || g.inst?.lots > 0) out.push({ label: '法人同步', text: g.inst?.lots > 0 ? `法人合計買超 ${g.inst.lots.toLocaleString()} 張` : '投信／法人同方向' });
   if (ok('theme')) out.push({ label: '題材輪動', text: `同題材：${g.themes.map((t) => t.term).slice(0, 3).join('、')}` });
   if (!out.length && (ok('burst') || ok('sync'))) out.push({ label: '一籃子下單', text: '同一分鐘同時爆量／同步，像程式或一籃子單' });
@@ -51,7 +57,7 @@ export function watchOf(g, streak) {
   const br = g.branches?.ok && g.branches.common?.[0];
   if (br) out.push(`${br.name} 是否續買`);
   if (g.inst?.lots > 0) out.push('法人是否續買');
-  if (g.daytrade?.hot) out.push('開盤是否開高走低（隔日沖出貨）');
+  if (g.daytrade?.hot && (surgeMultiple(g.daytrade) ?? 0) >= SURGE_X) out.push('開盤是否開高走低（隔日沖出貨）');
   return out.length ? out : ['是否再一起動'];
 }
 
@@ -180,7 +186,7 @@ export function hotHtml(list, stats, wide = null) {
   const ev = w?.evidence || {};
   const tableRows = [
     ['🔥 全部', w?.hot],
-    ['　突然湧入（≥ 平常 2 倍）', w?.surge],
+    [`　突然湧入（≥ 平常 ${SURGE_X} 倍）`, w?.surge],
     ['　平常就這樣', w?.habitual],
     ['其他（非 🔥）', w?.rest],
     ['證據 ✓ ≥ 4 項', ev.ev4],
@@ -202,7 +208,7 @@ export function hotHtml(list, stats, wide = null) {
 
 /** 🔥 突然湧入: a 🔥 group whose members day-trade at 2× their usual or more (on average). */
 export function isSurge(g) {
-  return !!g.daytrade?.hot && (surgeMultiple(g.daytrade) ?? 0) >= 2;
+  return !!g.daytrade?.hot && (surgeMultiple(g.daytrade) ?? 0) >= SURGE_X;
 }
 
 /**

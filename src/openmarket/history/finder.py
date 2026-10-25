@@ -30,7 +30,7 @@ from itertools import combinations
 from .linkage import align_bars, amplitude_pct, limit_up_price, minutes, pearson, turnover_rate
 from .store import HistoryStore
 
-FINDER_VERSION = 10  # part of the cache key: bump when the search logic changes, so stored results are redone (5 was used by a reverted experiment)
+FINDER_VERSION = 11  # part of the cache key: bump when the search logic changes, so stored results are redone (5 was used by a reverted experiment)
 EXCESS_R = 0.4  # 扣指數後分時 R: the funnel's default and the 🧾 扣指數 check alike (evidence.js EXCESS_R)
 INTRADAY_BASES = ("raw", "market", "sector")  # the 分時 R the funnel filters on: as is / 扣大盤 / 扣大盤＋類股
 PEAK_END = 240  # the intraday high is taken over 09:00–13:00
@@ -767,6 +767,10 @@ def theme_titles(term: str, news_days: list[dict], dates: list[str] | None, name
 
 # ---- 高點錯開但走勢一樣 (shown only: N's groups stay as they are) -----------------------------------
 
+# 同爆量: at least BURST_CO same-minute bursts and BURST_X × chance; 3 and 3 since 2026-10-25 (methods/m6:
+# random pairs 2.7%, against 41.8% at the former 2 and 2)
+BURST_CO = 3
+BURST_X = 3.0
 SHAPE_DTW_MAX = 2.5  # the median DTW distance of N's own pairs (research/m2, 2026-10-25)
 SHAPE_PAIRS_MAX = 10
 
@@ -873,7 +877,7 @@ def group_evidence(members: list[str], feats: Mapping[str, Intraday], minute_bar
             if mn and mn["expected"] is not None:
                 v_co.append(mn["co"])
                 v_exp.append(mn["expected"])
-                burst.append(mn["co"] >= 2 and mn["co"] >= 2 * max(mn["expected"], 0.5))
+                burst.append(mn["co"] >= BURST_CO and mn["co"] >= BURST_X * max(mn["expected"], 0.5))
             else:
                 burst.append(None)
             if mn and mn["r0"] is not None and mn["r_off"] is not None:

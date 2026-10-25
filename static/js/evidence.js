@@ -44,7 +44,7 @@ export function evidenceItems(f, ext, ev) {
   // 3. volume in the same minute
   const mn = ev?.minute;
   const co = mn && mn.expected !== null ? mn : null;
-  add('burst', co ? co.co >= 2 && co.co >= 2 * Math.max(co.expected, 0.5) : null,
+  add('burst', co ? co.co >= BURST_CO && co.co >= BURST_X * Math.max(co.expected, 0.5) : null,
     '同一分鐘一起爆量',
     co ? `同分鐘爆量 ${co.co} 次（隨機預期 ${co.expected.toFixed(1)} 次）` : '沒有 1 分 K（約 30 天前的日子沒有）');
 
@@ -98,7 +98,14 @@ export function evidenceItems(f, ext, ev) {
  * the 300 most traded, 15 days); 隨機 is 10% by its own definition (above the 90th percentile).
  * Shown only — the ✓ count is unchanged.
  */
-export const BASE_RATES = { excess: 0.007, baseline: 0.1, burst: 0.398, sync: 0.048, samedir: 0.058, chips: 0.513 };
+export const BASE_RATES = { excess: 0.007, baseline: 0.1, burst: 0.027, sync: 0.048, samedir: 0.058, chips: 0.513 };
+// 同爆量 at ≥ 3 bursts and ≥ 3 × chance (finder.BURST_CO / BURST_X; methods/m6: random 2.7%, was 41.8% at 2 and 2)
+export const BURST_CO = 3;
+export const BURST_X = 3;
+// 籌碼 tells little (methods/m6: lift ≤ 1.4 whichever way it is read): shown, not counted
+export const INFO_ONLY = new Set(['chips']);
+// 突然湧入 from this multiple of the usual 當沖比 (linkage.SURGE_X; research/exp7)
+export const SURGE_X = 1.5;
 export const baseText = (key) => (BASE_RATES[key] == null ? '' : `隨機配對約 ${BASE_RATES[key] < 0.01 ? '<1' : Math.round(BASE_RATES[key] * 100)}% 也會出現`);
 
 /** A group's 當沖比 as a multiple of its members' usual (the 20 days before), averaged; null without both. */
@@ -116,12 +123,13 @@ export function surgeText(dt) {
 
 /** The ✓／✗ list with its count: 「9 項裡 6 項支持（2 項資料不足）」. */
 export function evidenceHtml(items) {
-  const yes = items.filter((x) => x.ok === true).length;
-  const no = items.filter((x) => x.ok === false).length;
-  const none = items.length - yes - no;
-  const mark = (ok) => (ok === true ? '<b class="up">✓</b>' : ok === false ? '<b class="down">✗</b>' : '<span class="muted">—</span>');
+  const counted = items.filter((x) => !INFO_ONLY.has(x.key));
+  const yes = counted.filter((x) => x.ok === true).length;
+  const no = counted.filter((x) => x.ok === false).length;
+  const none = counted.length - yes - no;
+  const mark = (ok, key) => (INFO_ONLY.has(key) ? '<span class="muted" title="參考，不計票">◦</span>' : ok === true ? '<b class="up">✓</b>' : ok === false ? '<b class="down">✗</b>' : '<span class="muted">—</span>');
   const rows = items
-    .map((x) => `<li class="${x.ok === null ? 'muted' : ''}">${mark(x.ok)} ${escapeHtml(x.label)} <small class="muted">${escapeHtml(x.detail)}</small>${baseText(x.key) ? ` <small class="muted ev-base" title="這一項在同一天隨機挑兩檔時，本來就有這個比例會成立；越低越有參考價值（不影響 ✓ 計數）">（${escapeHtml(baseText(x.key))}）</small>` : ''}</li>`)
+    .map((x) => `<li class="${x.ok === null || INFO_ONLY.has(x.key) ? 'muted' : ''}">${mark(x.ok, x.key)} ${escapeHtml(x.label)}${INFO_ONLY.has(x.key) ? '（參考，不計票）' : ''} <small class="muted">${escapeHtml(x.detail)}</small>${baseText(x.key) ? ` <small class="muted ev-base" title="這一項在同一天隨機挑兩檔時，本來就有這個比例會成立；越低越有參考價值（不影響 ✓ 計數）">（${escapeHtml(baseText(x.key))}）</small>` : ''}</li>`)
     .join('');
   return `<div class="ev-box"><div class="ev-h">🧾 資金一致性證據 <b>${yes}</b>／${yes + no} 項支持${none ? ` <small class="muted">（${none} 項資料不足，不算）</small>` : ''}</div><ul class="ev-list">${rows}</ul></div>`;
 }
@@ -151,6 +159,7 @@ export function groupEvidenceItems(g) {
 
 /** {yes, known}: how many checks support, out of those with data. */
 export function evidenceCount(items) {
+  items = items.filter((x) => !INFO_ONLY.has(x.key)); // shown, not counted
   const known = items.filter((x) => x.ok !== null).length;
   return { yes: items.filter((x) => x.ok === true).length, known };
 }
@@ -165,7 +174,7 @@ export function groupEvidenceHtml(g) {
   if (!known) return '';
   const tip = items.map((x) => `${x.ok === true ? '✓' : x.ok === false ? '✗' : '—'} ${x.short}：${x.detail}${baseText(x.key) ? `（${baseText(x.key)}）` : ''}`).join('\n');
   const tags = items
-    .filter((x) => x.ok !== null)
+    .filter((x) => x.ok !== null && !INFO_ONLY.has(x.key))
     .map((x) => `<span class="${x.ok ? 'up' : 'down'}">${x.ok ? '✓' : '✗'}${escapeHtml(x.short)}</span>`)
     .join(' ');
   return `<div class="fd-ev${isStrong({ yes, known }) ? ' strong' : ''}" title="${escapeHtml(`資金一致性證據（每項看群內多數組合）\n${tip}`)}">🧾 證據 <b>${yes}</b>/${known} ${tags}</div>`;

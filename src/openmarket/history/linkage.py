@@ -419,7 +419,8 @@ def daytrade_group(vals: Mapping[str, float | None], before: Mapping[str, list[f
     return {"by_code": known, "avg": avg, "hot": avg is not None and avg >= DAYTRADE_HOT, "base": base}
 
 
-SURGE_X = 2.0  # 🔥 突然湧入: the members' 當沖比 at least this many times their usual (the 20 days before)
+SURGE_X = 1.5  # 🔥 突然湧入: the members' 當沖比 at least this many times their usual (the 20 days before);
+# 1.5 since 2026-10-25 (research/exp7: 75 stock-days faded −1.50% intraday next day; 2× had only 16)
 
 
 def hot_class(group: Mapping) -> str:
