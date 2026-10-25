@@ -274,7 +274,7 @@ export function reportText(date, index, list, rows, hotStats = null, shapes = []
 
 // ---- HTML ---------------------------------------------------------------------------------------
 
-const CHASE_TIP = '落後股今天帶量上漲（量比 ≥ 1.5），而且平常跟這組高度連動（20 日相關 ≥ 0.6）。回測 60 天（study 分支 exp8）：這類隔天平均跑輸大盤 1.63%，只有 22% 收紅，5 天後仍 −1.22%——帶量追漲常是假突破';
+const CHASE_TIP = '落後股今天帶量上漲（量比 ≥ 1.5），而且平常跟這組高度連動（20 日相關 ≥ 0.6）。回測 60 天（study 分支 exp8）：這類隔天平均跑輸大盤 1.63%，只有 22% 收紅；前後半段分開驗證，隔天都一樣弱（勝率 23%、20%），但 5 天後方向不一致——只適合當「隔天別追」的提醒';
 
 /** 回測 10 日線觀察名單 (research/exp8): members of a tight-sync group of the last 10 days at or under
  *  their 10-day average for the first time today. Shown only, not a recommendation. */
