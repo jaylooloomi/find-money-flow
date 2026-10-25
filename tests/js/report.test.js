@@ -228,3 +228,14 @@ test('highlightsHtml: the names in 今天重點 are buttons for the chart area',
   assert.match(html, /data-code="2492">華新科/);
   assert.equal(highlightsHtml(['只有文字'], {}), '<div class="rp-top"><b>今天重點</b><ul><li>只有文字</li></ul></div>');
 });
+
+test('🔒 整群漲停: a group mostly locked at limit-up leads 今天重點 (its evidence sinks it in the list)', async () => {
+  const { highlights, isLockedGroup } = await import('../../static/js/report.js');
+  const m = (name, locked) => ({ code: name, name, change_pct: 9.9, locked_at: locked ? '09:30' : null });
+  const big = { members: [m('華榮', 1), m('光寶科', 1), m('全新', 1), m('晶豪科', 1), m('大量', 0)], turnover_100m: 333.3 };
+  assert.equal(isLockedGroup(big), true);
+  assert.equal(isLockedGroup({ members: [m('甲', 1), m('乙', 1)] }), false); // a pair is not a 整群
+  assert.equal(isLockedGroup({ members: [m('甲', 1), m('乙', 0), m('丙', 0)] }), false);
+  const lines = highlights([{ g: big }, { g: { members: [m('甲', 0), m('乙', 0)] } }], []);
+  assert.equal(lines[0], '🔒 整群漲停（大資金同時進場；證據數因鎖漲停偏低）：華榮、光寶科、全新、晶豪科 等 5 檔（333 億）');
+});

@@ -238,9 +238,24 @@ export function isSurge(g) {
  * 今天重點: at most five lines of what stands out today, from what the report already worked out —
  * 突然湧入 hot money, 疑似出貨, 證據強, a run of days, and the closest 高點錯開 pair. [text]
  */
+export const LOCKED_MIN = 3; // 整群漲停: at least this many members …
+export const LOCKED_SHARE = 0.6; // … and this share of them locked at limit-up
+export const LOCKED_TIP = '這一群大部分成員鎖漲停：大量資金同時進場。鎖住的股票分時是一條平線，扣指數、隨機、同爆量、同分鐘這幾項證據算不出來或不準，所以證據數偏低、排在清單後面，不代表不重要';
+
+/** 整群漲停: ≥ LOCKED_MIN members and ≥ LOCKED_SHARE of them locked at limit-up (N's 🔒). */
+export function isLockedGroup(g) {
+  const ms = g.members || [];
+  return ms.length >= LOCKED_MIN && ms.filter((m) => m.locked_at).length >= LOCKED_SHARE * ms.length;
+}
+
 export function highlights(list, rows, shapes = [], pulls = []) {
   const out = [];
   const names = (xs) => xs.slice(0, 3).join('／') + (xs.length > 3 ? ` 等 ${xs.length} 組` : '');
+  // the biggest money of the day first: whole groups locked at limit-up sink in the evidence order
+  const locked = list.filter((x) => isLockedGroup(x.g)).sort((a, b) => (b.g.turnover_100m ?? 0) - (a.g.turnover_100m ?? 0));
+  if (locked.length) {
+    out.push(`🔒 整群漲停（大資金同時進場；證據數因鎖漲停偏低）：${locked.slice(0, 2).map((x) => `${x.g.members.slice(0, 4).map((m) => m.name).join('、')}${x.g.members.length > 4 ? ` 等 ${x.g.members.length} 檔` : ''}${x.g.turnover_100m != null ? `（${Math.round(x.g.turnover_100m)} 億）` : ''}`).join('／')}${locked.length > 2 ? ` 另 ${locked.length - 2} 群` : ''}`);
+  }
   const surge = list.filter((x) => isSurge(x.g)).map((x) => namesOf(x.g));
   if (surge.length) out.push(`🔥 隔日沖熱錢突然湧入：${names(surge)}（歷史上這類隔天多半開高走低）`);
   const dumped = rows.filter((r) => r.status.includes('出貨')).map((r) => r.names);
@@ -251,7 +266,7 @@ export function highlights(list, rows, shapes = [], pulls = []) {
   if (runs.length) out.push(`連續出現：${names(runs)}`);
   if (pulls?.length) out.push(`回測 10 日線（同步族群的觀察名單）：${pulls.slice(0, 3).map((x) => x.name).join('、')}${pulls.length > 3 ? ` 等 ${pulls.length} 檔` : ''}`);
   if (shapes.length) out.push(`高點錯開但走勢一樣：${shapes.slice(0, 2).map((x) => x.members.map((m) => m.name).join('＋')).join('／')}${shapes.length > 2 ? ` 等 ${shapes.length} 對` : ''}`);
-  return out.slice(0, 5);
+  return out.slice(0, 6);
 }
 
 /** The report as plain text (複製成文字: for notes or a chat). */
@@ -338,12 +353,12 @@ function groupHtml(x, i, row) {
     .map((t) => `<span class="${t.ok ? 'up' : 'down'}" title="${escapeHtml(t.detail)}">${t.ok ? '✓' : '✗'}${escapeHtml(t.short)}</span>`)
     .join(' ');
   const members = x.g.members
-    .map((m) => `<button type="button" class="rp-stock" data-code="${escapeHtml(m.code)}" title="${escapeHtml(m.code)}：開資訊卡">${escapeHtml(m.name)} <small class="${m.change_pct > 0 ? 'up' : m.change_pct < 0 ? 'down' : ''}">${fmtPct(m.change_pct)}</small></button>`)
+    .map((m) => `<button type="button" class="rp-stock" data-code="${escapeHtml(m.code)}" title="${escapeHtml(m.code)}：看圖">${escapeHtml(m.name)} <small class="${m.change_pct > 0 ? 'up' : m.change_pct < 0 ? 'down' : ''}">${fmtPct(m.change_pct)}</small>${m.locked_at ? ' 🔒' : ''}</button>`)
     .join('');
   const motive = motiveOf(x.g, items).map((m) => `<b>${escapeHtml(m.label)}</b>：${escapeHtml(m.text)}`).join('；');
   return `<div class="rp-group">
     <div class="rp-gh"><span class="rp-n">${i + 1}</span>${members}<span class="rp-ev${x.strong ? ' strong' : ''}" title="資金一致性證據：有資料的項目中 ✓ 的數量">${x.strong ? '證據強 ' : '證據 '}${x.ev.yes}/${x.ev.known}</span>
-      <span class="muted rp-src">${x.method === 'new' ? '找法2' : '找法1'}</span></div>
+      <span class="muted rp-src">${x.method === 'new' ? '找法2' : '找法1'}</span>${isLockedGroup(x.g) ? ` <b class="up rp-locked" title="${escapeHtml(LOCKED_TIP)}">🔒 整群漲停</b>` : ''}</div>
     <div class="rp-line"><span class="muted">動機判讀</span> ${motive}</div>${concHtml(x.g)}${laggardsHtml(x.g)}
     <div class="rp-line rp-chips">${chips || '<span class="muted">沒有證據資料</span>'}</div>
     <div class="rp-line"><span class="muted">明天觀察</span> ${escapeHtml(watchOf(x.g, row?.streak || 0).join('；'))}</div>
