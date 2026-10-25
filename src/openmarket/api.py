@@ -1503,7 +1503,8 @@ def create_app(
             return p.read_text(encoding="utf-8") if p.exists() else None
 
         return {"coverage": rows("coverage.csv"), "feasibility": text("feasibility.md"), "summary": text("summary.md"),
-                "main_table": rows("main_table.csv"), "robustness": text("robustness.md")}
+                "main_table": rows("main_table.csv"), "robustness": text("robustness.md"), "chart": text("median_returns.svg"),
+                "ext_summary": text("ext/summary.md"), "ext_chart": text("ext/median_returns.svg")}
 
     if static_dir.is_dir():
         # Windows takes MIME types from the registry, where .js may not be text/javascript;

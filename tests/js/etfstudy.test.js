@@ -19,3 +19,7 @@ test('coverageHtml: missing 淨值 in red, gaps in yellow', () => {
   assert.match(html, /50,000/);
   assert.equal(coverageHtml([]), '');
 });
+
+test('mdHtml: an image line is left to the panel', () => {
+  assert.equal(mdHtml('![圖](a.svg)'), '');
+});

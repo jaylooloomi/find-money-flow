@@ -6,7 +6,8 @@
    (drops by the dividend, so we add the dividend back) or already adjusted?
 3. The ETFs without a 淨值: do they trade at all?
 
-Run: .venv/Scripts/python research/etf_premium/validate.py
+Run: .venv/Scripts/python research/etf_premium/validate.py          (1-3)
+     .venv/Scripts/python research/etf_premium/validate.py --mops   (4, after fetch_mops.py)
 """
 
 from __future__ import annotations
@@ -69,5 +70,45 @@ def main() -> None:
         print("  ", x)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and "--mops" not in sys.argv:
     main()
+
+
+def mops_check() -> None:
+    """4. The official 淨值／收盤 (公開資訊觀測站) against MoneyDJ's 淨值 and FinMind's close, every ETF-day both have."""
+    sys.stdout.reconfigure(encoding="utf-8")
+    off: dict[tuple[str, str], tuple[str, str]] = {}
+    for sub in ("mops", "mops_active"):
+        for p in sorted((RAW / sub).glob("*.csv")):
+            for r in read(p):
+                if r["nav_date"] == p.stem:
+                    off[(r["code"], p.stem)] = (r["nav"], r["close"])
+    days = sorted({d for _, d in off})
+    print(f"官方淨值：{len(days)} 天（{days[0] if days else '—'}～{days[-1] if days else '—'}），{len({c for c, _ in off})} 檔，{len(off)} 筆")
+    nav_n = nav_bad = px_n = px_bad = 0
+    bad = []
+    for code in sorted({c for c, _ in off}):
+        mdj = {r["date"]: r for r in read(RAW / "nav" / f"{code}.csv")}
+        fm = {r["date"].replace("-", ""): r for r in read(RAW / "price" / f"{code}.csv")}
+        for (c, d), (nav, close) in off.items():
+            if c != code:
+                continue
+            nav = float(nav)
+            m = mdj.get(d)
+            f = fm.get(d)
+            if m and f and float(f["close"] or 0) and float(m["price_adj"] or 0):
+                k = round(float(f["close"]) / float(m["price_adj"]))  # the split factor that day
+                nav_n += 1
+                if abs(float(m["nav_adj"]) * k - nav) > 0.006 * max(1, k) + 1e-9:
+                    nav_bad += 1
+                    bad.append((code, d, nav, round(float(m["nav_adj"]) * k, 4)))
+            if f and float(f["Trading_Volume"] or 0) and close not in ("", "--", "-"):
+                px_n += 1
+                if abs(float(f["close"]) - float(close)) > 0.0051:
+                    px_bad += 1
+    print(f"官方淨值 vs MoneyDJ：{nav_n} 筆比對，差 > 0.005 元的 {nav_bad} 筆：{bad[:10]}")
+    print(f"官方收盤 vs FinMind：{px_n} 筆比對，不一致 {px_bad} 筆")
+
+
+if __name__ == "__main__" and "--mops" in sys.argv:
+    mops_check()

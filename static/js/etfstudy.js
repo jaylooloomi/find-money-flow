@@ -27,6 +27,8 @@ export function mdHtml(md) {
       for (; i < lines.length && /^\s*[-*] /.test(lines[i]); i++) items.push(`<li>${inline(lines[i].replace(/^\s*[-*] /, ''))}</li>`);
       i--;
       out.push(`<ul>${items.join('')}</ul>`);
+    } else if (/^!\[/.test(l)) {
+      // an image line: the chart is placed by the panel
     } else if (/^#{1,4} /.test(l)) {
       const n = Math.min(4, l.match(/^#+/)[0].length + 1);
       out.push(`<h${n}>${inline(l.replace(/^#+ /, ''))}</h${n}>`);
@@ -69,8 +71,10 @@ export function mountEtfStudy(container) {
       const x = await r.json();
       loaded = true;
       const parts = [];
-      if (x.summary) parts.push(`<div class="es-md">${mdHtml(x.summary)}</div>`);
+      const svg = (s) => (s ? `<img class="es-chart" alt="三組在六個視窗的中位數報酬" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(s)}">` : '');
+      if (x.summary) parts.push(`<div class="es-md">${mdHtml(x.summary)}${svg(x.chart)}</div>`);
       if (x.robustness) parts.push(`<details><summary>穩健性檢查</summary><div class="es-md">${mdHtml(x.robustness)}</div></details>`);
+      if (x.ext_summary) parts.push(`<details><summary>附錄：延伸到 2003 年（MoneyDJ 淨值）</summary><div class="es-md">${mdHtml(x.ext_summary)}${svg(x.ext_chart)}</div></details>`);
       if (x.feasibility) parts.push(`<div class="es-md">${mdHtml(x.feasibility)}</div>`);
       if (x.coverage?.length) parts.push(`<details><summary>各檔資料涵蓋（${x.coverage.length} 檔）</summary>${coverageHtml(x.coverage)}</details>`);
       body.innerHTML = parts.join('') || '<p class="hint">還沒有結果：先執行 research/etf_premium/fetch.py 與 coverage.py。</p>';

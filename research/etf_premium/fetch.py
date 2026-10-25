@@ -8,6 +8,7 @@ Sources (each verified on 0050 before the batch):
 - 加權報酬指數: TWSE MFI94U (monthly pages)
 
 Run: .venv/Scripts/python research/etf_premium/fetch.py   (re-runs skip files already on disk)
+     .venv/Scripts/python research/etf_premium/fetch.py --ext   (the 2003- appendix, into data/raw/etf_ext/)
 """
 
 from __future__ import annotations
@@ -24,6 +25,9 @@ import httpx
 RAW = Path(__file__).resolve().parents[2] / "data" / "raw" / "etf"
 START, END = date(2020, 1, 1), date.today()
 PRICE_START = date(2019, 9, 1)  # the 60-day 均量 on the first days of 2020 needs the autumn before
+if "--ext" in sys.argv:  # the appendix: 2003 on (MoneyDJ 淨值 and TWSE 報酬指數 both start in 2003) into raw/etf_ext
+    RAW = RAW.parent / "etf_ext"
+    START, PRICE_START = date(2003, 1, 1), date(2002, 9, 1)
 H = {"User-Agent": "Mozilla/5.0"}
 DOMESTIC_TYPES = {"國內成分證券指數股票型基金", "國內成分證券主動式交易所交易基金(股票)"}
 PAUSE = 1.5  # seconds between requests to the same site
@@ -103,6 +107,8 @@ def tr_index() -> Path:
 def main() -> None:
     sys.stdout.reconfigure(encoding="utf-8")
     etfs = [x for x in universe() if x["基金類型"] in DOMESTIC_TYPES]
+    if "--ext" in sys.argv:  # only the ones listed before 2020 can add pre-2020 events
+        etfs = [x for x in etfs if int(x["上市日期"]) < 1090101]
     print(f"候選 {len(etfs)} 檔")
     tr_index()
     for i, x in enumerate(etfs):
