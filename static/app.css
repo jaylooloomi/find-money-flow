@@ -524,3 +524,5 @@ table.link-heat td.self { background: #3a3e48; }
 .es-table tr.down td { color: #ff6b6b; }
 .es-table tr.warn td { color: #f5c542; }
 .hEtfStudy details summary { cursor: pointer; margin: 8px 0; }
+.es-md .es-table td, .es-md .es-table th { white-space: normal; text-align: left; vertical-align: top; }
+.es-md .es-table td:not(:first-child) { min-width: 3em; }
