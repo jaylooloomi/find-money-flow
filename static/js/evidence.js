@@ -103,7 +103,7 @@ export const BASE_RATES = { excess: 0.007, baseline: 0.1, burst: 0.027, sync: 0.
 export const BURST_CO = 3;
 export const BURST_X = 3;
 // 籌碼 tells little (methods/m6: lift ≤ 1.4 whichever way it is read): shown, not counted
-export const INFO_ONLY = new Set(['chips']);
+export const INFO_ONLY = new Set(['chips', 'shape']); // 形狀: shown while its worth as a vote is measured
 // 突然湧入 from this multiple of the usual 當沖比 (linkage.SURGE_X; research/exp7)
 export const SURGE_X = 1.5;
 export const baseText = (key) => (BASE_RATES[key] == null ? '' : `隨機配對約 ${BASE_RATES[key] < 0.01 ? '<1' : Math.round(BASE_RATES[key] * 100)}% 也會出現`);
@@ -150,6 +150,7 @@ export function groupEvidenceItems(g) {
   const rel = (g.relations?.length || 0) + (g.rel_group ? 1 : 0);
   add('relation', rel ? true : null, '持股', rel ? '有持股／集團關係' : '沒有（或還沒抓到）');
   add('samedir', pick('samedir').ok, '同漲跌', pick('samedir').share === null || pick('samedir').share === undefined ? '資料不足' : `近期 ${Math.round(pick('samedir').share * 100)}% 的日子同方向`);
+  add('shape', pick('shape').ok, '形狀', pick('shape').dtw === null || pick('shape').dtw === undefined ? '資料不足' : `日內走勢形狀的 DTW 距離 ${r2(pick('shape').dtw)}（≤ 2.5 算相似）`);
   const br = g.branches;
   add('branch', br ? br.ok : null, '同分點',
     br ? (br.common.length ? `${br.common[0].name} 同時買超 ${Object.keys(br.common[0].ranks).length} 檔` : '買超前 15 名沒有共同分點') : '分點還沒抓（收盤後快照）');

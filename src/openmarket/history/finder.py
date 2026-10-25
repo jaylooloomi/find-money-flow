@@ -873,8 +873,9 @@ def majority(oks: list[bool | None]) -> bool | None:
 
 def group_evidence(members: list[str], feats: Mapping[str, Intraday], minute_bars: Mapping[str, list], index_returns: Mapping[str, list],
                    markets: Mapping[str, str], pool: Mapping[str, list], series: Mapping[str, list], seed: str) -> dict:
-    """{excess, baseline, burst, sync, samedir}: each {ok, value…}, decided pair by pair (majority)."""
-    from .evidence import minute_evidence, percentile_of, residuals
+    """{excess, baseline, burst, sync, samedir, shape}: each {ok, value…}, decided pair by pair (majority).
+    shape (DTW of the session shapes ≤ SHAPE_DTW_MAX) is shown only: linkage.EVIDENCE_CHECKS leaves it out."""
+    from .evidence import dtw, minute_evidence, percentile_of, residuals, shape_path
 
     def r_of(x: list, y: list, k: int = 20) -> float | None:
         pts = [(a, b) for a, b in zip(x, y) if a is not None and b is not None]
@@ -883,8 +884,9 @@ def group_evidence(members: list[str], feats: Mapping[str, Intraday], minute_bar
     res = {c: feats[c].excess if c in feats and feats[c].excess is not None
            else residuals(feats[c].returns, index_returns[markets[c]]) if c in feats and markets.get(c) in index_returns else None
            for c in members}
-    ex, base, burst, sync, same = [], [], [], [], []
-    v_ex, v_pct, v_co, v_exp, v_r0, v_off, v_same = [], [], [], [], [], [], []
+    ex, base, burst, sync, same, shape = [], [], [], [], [], []
+    v_ex, v_pct, v_co, v_exp, v_r0, v_off, v_same, v_dtw = [], [], [], [], [], [], [], []
+    paths = {c: shape_path(feats[c].returns[-(BUCKETS - 1):]) if c in feats else None for c in members}
     for i, a in enumerate(members):
         for b in members[i + 1:]:
             if res.get(a) and res.get(b):
@@ -918,6 +920,12 @@ def group_evidence(members: list[str], feats: Mapping[str, Intraday], minute_bar
                 same.append(share >= 0.75)
             else:
                 same.append(None)
+            if paths.get(a) is not None and paths.get(b) is not None:
+                d = dtw(paths[a], paths[b])
+                v_dtw.append(d)
+                shape.append(d <= SHAPE_DTW_MAX)
+            else:
+                shape.append(None)
     mean = lambda xs: round(sum(xs) / len(xs), 3) if xs else None  # noqa: E731
     return {
         "excess": {"ok": majority(ex), "r": mean(v_ex)},
@@ -925,6 +933,7 @@ def group_evidence(members: list[str], feats: Mapping[str, Intraday], minute_bar
         "burst": {"ok": majority(burst), "co": sum(v_co) if v_co else None, "expected": round(sum(v_exp), 2) if v_exp else None},
         "sync": {"ok": majority(sync), "r0": mean(v_r0), "r_off": mean(v_off)},
         "samedir": {"ok": majority(same), "share": mean(v_same)},
+        "shape": {"ok": majority(shape), "dtw": mean(v_dtw)},
     }
 
 

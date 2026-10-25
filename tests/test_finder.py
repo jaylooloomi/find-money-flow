@@ -607,6 +607,9 @@ def test_group_evidence_majority_of_pairs():
     assert ev["baseline"]["ok"] is True and ev["baseline"]["pct"] >= 95
     assert ev["burst"]["ok"] is None and ev["sync"]["ok"] is None  # no 1-minute bars: no data, not a ✗
     assert ev["samedir"] == {"ok": True, "share": 1.0}
+    assert ev["shape"]["ok"] in (True, False) and ev["shape"]["dtw"] is not None  # shown, not among the counted checks
+    from openmarket.history.linkage import EVIDENCE_CHECKS, evidence_yes
+    assert "shape" not in EVIDENCE_CHECKS and evidence_yes({"evidence": {"shape": {"ok": True}}}) == 0
 
 
 def test_branch_snapshot_skips_stored_members(tmp_path):

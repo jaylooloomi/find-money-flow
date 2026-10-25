@@ -115,3 +115,12 @@ test('surgeMultiple: the group’s 當沖比 against its members’ usual', asyn
   assert.match(surgeText({ by_code: { 1: 60 }, base: { 1: 55 } }), /class="muted"/);
   assert.equal(surgeText(null), '');
 });
+
+test('形狀 (DTW) is shown, not counted', () => {
+  const g = { evidence: { excess: { ok: true, r: 0.5 }, shape: { ok: true, dtw: 1.8 } } };
+  const items = groupEvidenceItems(g);
+  assert.match(items.find((x) => x.key === 'shape').detail, /DTW 距離 1\.80（≤ 2\.5 算相似）/);
+  assert.deepEqual(evidenceCount(items), { yes: 1, known: 1 });
+  assert.doesNotMatch(groupEvidenceHtml(g), /✓形狀/);
+  assert.equal(groupEvidenceItems({ evidence: {} }).find((x) => x.key === 'shape').ok, null); // an older result: —
+});
