@@ -32,7 +32,7 @@ from .store import HistoryStore
 
 FINDER_VERSION = 11  # part of the cache key: bump when the search logic changes, so stored results are redone (5 was used by a reverted experiment)
 EXCESS_R = 0.4  # 扣指數後分時 R: the funnel's default and the 🧾 扣指數 check alike (evidence.js EXCESS_R)
-INTRADAY_BASES = ("raw", "market", "sector")  # the 分時 R the funnel filters on: as is / 扣大盤 / 扣大盤＋類股
+INTRADAY_BASES = ("raw", "market", "sector", "pca1")  # the 分時 R the funnel filters on: as is / 扣大盤 / 扣大盤＋類股 / 扣第 1 主成分
 PEAK_END = 240  # the intraday high is taken over 09:00–13:00
 OPEN_MINUTES = 2  # a high at 09:00–09:02 is the open, not a signal (unless locked limit-up)
 BUCKETS = 54  # 5-minute buckets 09:00–13:25
@@ -896,6 +896,52 @@ def add_excess(feats: dict[str, Intraday], by_code: Mapping[str, dict], rows: li
         f.excess, f.factor = residuals(f.returns, m), label
 
 
+PCA1_LABEL = "第1主成分"
+PCA1_ITER = 40
+
+
+def first_component(series: list[list[float | None]]) -> list[float] | None:
+    """The day's first principal component over time: each stock's returns standardised (a missing point is 0),
+    the top right singular vector of that matrix by power iteration. None with fewer than 10 stocks."""
+    rows = []
+    for s in series:
+        xs = [x for x in s if x is not None]
+        if len(xs) < 20:
+            continue
+        m = sum(xs) / len(xs)
+        sd = (sum((x - m) ** 2 for x in xs) / len(xs)) ** 0.5
+        if sd > 0:
+            rows.append([(x - m) / sd if x is not None else 0.0 for x in s])
+    if len(rows) < 10:
+        return None
+    t = len(rows[0])
+    v = [1.0] * t
+    for _ in range(PCA1_ITER):
+        u = [sum(a * b for a, b in zip(r, v)) for r in rows]
+        v = [sum(u[i] * rows[i][k] for i in range(len(rows))) for k in range(t)]
+        norm = sum(x * x for x in v) ** 0.5
+        if not norm:
+            return None
+        v = [x / norm for x in v]
+    return v
+
+
+def add_pca1(feats: dict[str, "Intraday"], by_code: Mapping[str, dict]) -> None:
+    """扣第 1 主成分 (research/m1: 4–6 factors a day; taking out more than the first takes the groups' own
+    signal too): .excess / .factor = each stock's residual on the day's first component of the fetched stocks."""
+    from .evidence import residuals
+
+    codes = [c for c in feats if c in by_code]
+    n = {len(feats[c].returns) for c in codes}
+    if len(n) != 1:
+        return
+    pc = first_component([feats[c].returns for c in codes])
+    if pc is None:
+        return
+    for c in codes:
+        feats[c].excess, feats[c].factor = residuals(feats[c].returns, pc), PCA1_LABEL
+
+
 # ---- 資金一致性證據 of a found group (the same checks as K's 🔗 交集, pair by pair) ----------------
 
 INDEX_ROWS = (("^TWII", "上市"), ("IX0043.TWO", "上櫃"))  # fetched with the candidates for the excess R
@@ -1053,7 +1099,10 @@ async def run_search(
     for code, (by_session, resolution) in got.items():
         aligned = {s: align_bars(b, session_rows.get(s, {}).get(code, {})) for s, b in by_session.items()}
         feats[code] = intraday_features(aligned, {s: session_rows.get(s, {}).get(code, {}) for s in sessions}, day, p, resolution)
-    add_excess(feats, by_code, rows, sessions, store.sector_intraday(sessions), "market" if p.intraday_basis == "market" else "sector")
+    if p.intraday_basis == "pca1":
+        add_pca1(feats, by_code)
+    else:
+        add_excess(feats, by_code, rows, sessions, store.sector_intraday(sessions), "market" if p.intraday_basis == "market" else "sector")
     adaptive = None
     if p.excess_r_mode == "adaptive" and p.intraday_basis != "raw":
         adaptive = adaptive_excess_r(feats, by_code, p, f"{day}{method}")

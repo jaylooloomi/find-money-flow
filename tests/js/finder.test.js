@@ -342,3 +342,9 @@ test('excess_r_mode: a 條件 select, shown in condText and sent in the query', 
   assert.match(condText(p), /扣大盤＋類股後分時 R ≥ 每日自適應門檻/);
   assert.equal(new URLSearchParams(queryOf('known', { ...p, groupings: ['industry'] })).get('excess_r_mode') ?? queryOf('known', p).get?.('excess_r_mode'), 'adaptive');
 });
+
+test('扣第 1 主成分 is one more 分時 R basis', async () => {
+  const { BASES } = await import('../../static/js/finder.js');
+  assert.equal(BASES.pca1, '扣第 1 主成分');
+  assert.match(condText({ daily_r: 0.8, new_daily_r: 0.8, intraday_basis: 'pca1', excess_r: 0.4, peak_gap: 8, dense: 0.7 }), /扣第 1 主成分後分時 R ≥ 0\.4/);
+});

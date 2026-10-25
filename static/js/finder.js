@@ -30,7 +30,7 @@ export const FIELDS = [
   ['pool_top', '各排行取前', 'int', 'new', '漲幅、週轉率、比重暴增、開盤跳空、量比各取前 N 名'],
   ['vol_ratio_window', '量比天數', 'int', 'new', '量比＝今天成交量 ÷ 前 N 個交易日的平均量'],
   ['new_min_volume_lots', '成交量 ≥（張）', 'int', 'new', '候選池只收當天成交量至少這麼多張的股票（1 張＝1,000 股）'],
-  ['intraday_basis', '分時 R 用', 'sel', '', '篩選用哪一種分時相關：原始＝直接算；扣大盤＝先扣掉大盤／櫃買；扣大盤＋類股＝上市股扣自己的類股指數（同產業上市少於 15 檔的改扣大盤），上櫃扣櫃買。扣得越多，越能排除「只是跟著大盤或類股漲」'],
+  ['intraday_basis', '分時 R 用', 'sel', '', '篩選用哪一種分時相關：原始＝直接算；扣大盤＝先扣掉大盤／櫃買；扣大盤＋類股＝上市股扣自己的類股指數（同產業上市少於 15 檔的改扣大盤），上櫃扣櫃買；扣第 1 主成分＝扣掉當天所有抓到分 K 的股票共同的最大波動（不分上市上櫃、不看產業，研究 m1：只扣第一個，再多會把組合本身的訊號也扣掉）。扣得越多，越能排除「只是跟著大盤或類股漲」'],
   ['intraday_r', '分時相關 ≥', 'num', '', '原始的分時相關門檻（分時 R 用「原始」時才篩這個）：最近幾個交易日 5 分 K 報酬；鎖漲停的平線不計'],
   ['excess_r', '扣指數後相關 ≥', 'num', '', '扣掉大盤／類股之後剩下的分時相關門檻（分時 R 用「扣大盤」或「扣大盤＋類股」時篩這個）；扣過的 R 通常比原始 R 低很多'],
   ['excess_r_mode', '門檻方式', 'sel', '', '固定＝用上面的數字；每日自適應＝每天從不同產業的隨機配對算出「只有 0.5% 會達到」的扣指數 R 當門檻（限制在 0.25～0.6 之間）。研究（exp1b）：每天會落在 0.29～0.48，組數只稍微穩一點；門檻每天不同，跨天的組數不能直接比'],
@@ -49,7 +49,7 @@ export function condText(p) {
   return `日 R ≥ ${p.daily_r}（找法2 ${p.new_daily_r}）、${intraday}、高點差 ≤ ${p.peak_gap} 分、群內 ${p.dense}`;
 }
 
-export const BASES = { sector: '扣大盤＋類股', market: '扣大盤', raw: '原始' };
+export const BASES = { sector: '扣大盤＋類股', market: '扣大盤', raw: '原始', pca1: '扣第 1 主成分' };
 export const EXCESS_MODES = { fixed: '固定', adaptive: '每日自適應' };
 const SEL_OPTIONS = { intraday_basis: BASES, excess_r_mode: EXCESS_MODES }; // kind 'sel': its options, the first the default
 

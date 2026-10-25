@@ -842,3 +842,27 @@ def test_adaptive_excess_r_from_cross_industry_random_pairs():
     thr = adaptive_excess_r(feats, by_code, FinderParams(), "seed")
     assert ADAPTIVE_BOUNDS[0] <= thr <= ADAPTIVE_BOUNDS[1]  # noise alone: about the 99.5% of |r| for 150 points, clamped
     assert adaptive_excess_r(dict(list(feats.items())[:10]), by_code, FinderParams(), "seed") is None  # too few stocks
+
+
+def test_first_component_finds_the_common_move_and_add_pca1_takes_it_out():
+    import random
+
+    from openmarket.history.finder import PCA1_LABEL, Intraday, add_pca1, first_component, pearson
+
+    rnd = random.Random(2)
+    common = [rnd.gauss(0, 1) for _ in range(120)]
+    pair = [rnd.gauss(0, 1) for _ in range(120)]  # what A and B share beyond the market
+    feats, by_code = {}, {}
+    for i in range(30):
+        own = pair if i < 2 else [0.0] * 120
+        feats[f"S{i}"] = Intraday(returns=[c * 1.5 + o + rnd.gauss(0, 0.5) for c, o in zip(common, own)])
+        by_code[f"S{i}"] = {}
+    pc = first_component([f.returns for f in feats.values()])
+    assert abs(pearson(pc, common)) > 0.95
+    add_pca1(feats, by_code)
+    assert feats["S0"].factor == PCA1_LABEL
+    raw = pearson(feats["S2"].returns, feats["S3"].returns)
+    res = pearson([x for x in feats["S2"].excess], [x for x in feats["S3"].excess])
+    assert raw > 0.8 and abs(res) < 0.3  # two stocks that only share the market: nothing left
+    assert pearson(feats["S0"].excess, feats["S1"].excess) > 0.6  # a pair with its own money: kept
+    assert first_component([[1.0] * 30] * 3) is None  # too few stocks
