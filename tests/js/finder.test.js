@@ -335,3 +335,10 @@ test('N cards show the members’ 籌碼集中度 when 分點 is stored', () => 
   assert.match(cardHtml(g, 0), /🏦 籌碼集中度 甲 <span class="up">\+17\.5%<\/span>、乙 <span class="down">-3\.0%<\/span>/);
   assert.doesNotMatch(cardHtml({ ...g, concentration: null }, 0), /籌碼集中度/);
 });
+
+test('excess_r_mode: a 條件 select, shown in condText and sent in the query', () => {
+  assert.ok(FIELDS.some(([k, , kind]) => k === 'excess_r_mode' && kind === 'sel'));
+  const p = { daily_r: 0.8, new_daily_r: 0.8, intraday_basis: 'sector', excess_r: 0.4, excess_r_mode: 'adaptive', peak_gap: 8, dense: 0.7 };
+  assert.match(condText(p), /扣大盤＋類股後分時 R ≥ 每日自適應門檻/);
+  assert.equal(new URLSearchParams(queryOf('known', { ...p, groupings: ['industry'] })).get('excess_r_mode') ?? queryOf('known', p).get?.('excess_r_mode'), 'adaptive');
+});

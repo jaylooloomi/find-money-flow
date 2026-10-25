@@ -23,7 +23,7 @@ import operator
 import re
 from collections.abc import Awaitable, Callable, Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import date
 from itertools import combinations
 
@@ -64,11 +64,47 @@ class FinderParams:
     vol_ratio_window: int = 5  # 量比: today's volume against the average of this many days before
     groupings: tuple[str, ...] = ("industry", "custom", "concept", "chain", "news")
     max_fetch: int = 400  # at most this many stocks get intraday bars (largest candidate sets first)
+    # added 2026-10-26, off by default (OPTIONAL_DEFAULTS): 扣指數門檻 fixed or set each day from random pairs
+    excess_r_mode: str = "fixed"  # EXCESS_R_MODES
 
     def key(self) -> str:
-        # list-type settings are sets: the same groupings in another order are the same search
-        fields = {k: sorted(v) if isinstance(v, (list, tuple)) else v for k, v in asdict(self).items()}
+        # list-type settings are sets: the same groupings in another order are the same search; a setting added
+        # later is left out while at its default, so the results stored before it keep their key
+        fields = {k: sorted(v) if isinstance(v, (list, tuple)) else v for k, v in asdict(self).items()
+                  if not (k in OPTIONAL_DEFAULTS and v == OPTIONAL_DEFAULTS[k])}
         return json.dumps({**fields, "v": FINDER_VERSION}, sort_keys=True, ensure_ascii=False)
+
+
+EXCESS_R_MODES = ("fixed", "adaptive")
+OPTIONAL_DEFAULTS = {"excess_r_mode": "fixed"}  # settings added after results were stored (see FinderParams.key)
+ADAPTIVE_Q = 0.995  # 自適應: the excess R that only 0.5% of the day's random cross-industry pairs reach (research/exp1b)
+ADAPTIVE_PAIRS = 3000
+ADAPTIVE_BOUNDS = (0.25, 0.6)  # never looser or tighter than this, whatever the day's pairs say
+ADAPTIVE_MIN_PAIRS = 300  # fewer usable random pairs: keep the fixed threshold
+
+
+def adaptive_excess_r(feats: Mapping[str, "Intraday"], by_code: Mapping[str, dict], p: "FinderParams", seed: str) -> float | None:
+    """The day's 扣指數門檻 from random pairs of the fetched stocks in different industries (which should not
+    move together): their ADAPTIVE_Q quantile of excess R, kept within ADAPTIVE_BOUNDS. None with too few pairs."""
+    import random
+
+    codes = sorted(c for c, f in feats.items() if c in by_code and f.excess is not None)
+    if len(codes) < 20:
+        return None
+    rng = random.Random(seed)
+    rs = []
+    for _ in range(ADAPTIVE_PAIRS):
+        a, b = rng.sample(codes, 2)
+        if by_code[a].get("industry") == by_code[b].get("industry"):
+            continue
+        r = series_r(feats[a].excess, feats[b].excess, p.intraday_min_points)
+        if r is not None:
+            rs.append(r)
+    if len(rs) < ADAPTIVE_MIN_PAIRS:
+        return None
+    rs.sort()
+    q = rs[min(len(rs) - 1, int(ADAPTIVE_Q * len(rs)))]
+    return round(min(max(q, ADAPTIVE_BOUNDS[0]), ADAPTIVE_BOUNDS[1]), 3)
 
 
 GROUPING_LABELS = {"industry": "官方產業", "custom": "自訂族群", "concept": "概念股", "chain": "細產業", "news": "新聞族群", "group": "集團"}
@@ -1018,6 +1054,11 @@ async def run_search(
         aligned = {s: align_bars(b, session_rows.get(s, {}).get(code, {})) for s, b in by_session.items()}
         feats[code] = intraday_features(aligned, {s: session_rows.get(s, {}).get(code, {}) for s in sessions}, day, p, resolution)
     add_excess(feats, by_code, rows, sessions, store.sector_intraday(sessions), "market" if p.intraday_basis == "market" else "sector")
+    adaptive = None
+    if p.excess_r_mode == "adaptive" and p.intraday_basis != "raw":
+        adaptive = adaptive_excess_r(feats, by_code, p, f"{day}{method}")
+        if adaptive is not None:
+            p = replace(p, excess_r=adaptive)  # this search only; the stored params say which threshold was used
     funnel: dict = {}
     found = confirm(cands, feats, p, funnel)
     shape_pairs = staggered_pairs(cands, feats, p, by_code)
@@ -1041,6 +1082,7 @@ async def run_search(
         "params": asdict(p),
         "groupings": [GROUPING_LABELS.get(g, g) for g in groupings],
         "shape_pairs": shape_pairs,
+        "excess_r_used": p.excess_r if p.intraday_basis != "raw" else None, "excess_r_adaptive": adaptive,
         "stats": {"candidates": len(cands), "pool": pool_size, "fetched": sum(1 for c in got if c in by_code), "groups": len(groups), "seconds": timing, "funnel": funnel},
         "groups": groups,
     }

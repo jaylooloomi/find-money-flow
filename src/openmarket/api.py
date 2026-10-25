@@ -29,7 +29,7 @@ from .history.linkage import (
     align_bars, amplitude_pct, limit_down_pct, limit_up_pct, minute_bars, turnover_rate, peak_stats, tick_bars, with_close_bar, race_points, returns, locked_level, daily_k, index_k, cross_members, daytrade_ratios, daytrade_group, evidence_class, evidence_yes, hot_class, is_tight_sync, next_day_stats, pullbacks,
     PULLBACK_DAYS, PULLBACK_MA, DAYTRADE_BASE_DAYS, DAYTRADE_HOT, top_members, verdict_r, verdict_timing,
 )
-from .history.finder import FINDER_VERSION, INST_STREAK_DAYS, INTRADAY_BASES, FinderParams, daily_series, flag_chasers, laggards, volume_ratio, inst_streak, inst_summary, margin_changes, margin_summary, pair_extras, persistence, run_search
+from .history.finder import EXCESS_R_MODES, FINDER_VERSION, INST_STREAK_DAYS, INTRADAY_BASES, FinderParams, daily_series, flag_chasers, laggards, volume_ratio, inst_streak, inst_summary, margin_changes, margin_summary, pair_extras, persistence, run_search
 from .history.finder import news_themes as finder_news_themes  # api.py has its own news_themes route
 from .intraday import IntradayRecorder
 from .sources.yahoo_intraday import INDEX_SYMBOLS, ONE_MINUTE_DAYS, fetch_bars, fetch_day_1m, fetch_span_1m
@@ -949,6 +949,8 @@ def create_app(
                     values[f.name] = tuple(x for x in raw.split(",") if x)
                 elif isinstance(default, str):
                     if f.name == "intraday_basis" and raw not in INTRADAY_BASES:
+                        raise ValueError(raw)
+                    if f.name == "excess_r_mode" and raw not in EXCESS_R_MODES:
                         raise ValueError(raw)
                     values[f.name] = raw
                 elif raw == "" and f.name == "start_gap":

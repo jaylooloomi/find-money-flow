@@ -815,3 +815,30 @@ def test_flag_chasers_marks_the_laggard_rising_on_volume_that_moves_with_the_gro
          "stocks": [{"code": "C", "change_pct": 1.0}, {"code": "D", "change_pct": 1.0}, {"code": "E", "change_pct": -1.0}]}}
     out = flag_chasers(g, {"C": 2.0, "D": 2.0, "E": 3.0}, series)
     assert [s["chase"] for s in out["stocks"]] == [True, False, False]  # D does not move with them; E fell
+
+
+def test_optional_settings_keep_the_stored_key_at_their_default():
+    from dataclasses import replace
+
+    from openmarket.history.finder import FinderParams
+
+    k = FinderParams().key()
+    assert "excess_r_mode" not in k  # results stored before the setting existed keep their key
+    assert replace(FinderParams(), excess_r_mode="adaptive").key() != k
+
+
+def test_adaptive_excess_r_from_cross_industry_random_pairs():
+    import random
+
+    from openmarket.history.finder import ADAPTIVE_BOUNDS, FinderParams, Intraday, adaptive_excess_r
+
+    rnd = random.Random(1)
+    feats, by_code = {}, {}
+    for i in range(60):
+        f = Intraday(returns=[rnd.gauss(0, 1) for _ in range(150)])
+        f.excess = f.returns
+        feats[f"S{i}"] = f
+        by_code[f"S{i}"] = {"industry": f"I{i % 6}"}
+    thr = adaptive_excess_r(feats, by_code, FinderParams(), "seed")
+    assert ADAPTIVE_BOUNDS[0] <= thr <= ADAPTIVE_BOUNDS[1]  # noise alone: about the 99.5% of |r| for 150 points, clamped
+    assert adaptive_excess_r(dict(list(feats.items())[:10]), by_code, FinderParams(), "seed") is None  # too few stocks

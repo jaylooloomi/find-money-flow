@@ -33,6 +33,7 @@ export const FIELDS = [
   ['intraday_basis', '分時 R 用', 'sel', '', '篩選用哪一種分時相關：原始＝直接算；扣大盤＝先扣掉大盤／櫃買；扣大盤＋類股＝上市股扣自己的類股指數（同產業上市少於 15 檔的改扣大盤），上櫃扣櫃買。扣得越多，越能排除「只是跟著大盤或類股漲」'],
   ['intraday_r', '分時相關 ≥', 'num', '', '原始的分時相關門檻（分時 R 用「原始」時才篩這個）：最近幾個交易日 5 分 K 報酬；鎖漲停的平線不計'],
   ['excess_r', '扣指數後相關 ≥', 'num', '', '扣掉大盤／類股之後剩下的分時相關門檻（分時 R 用「扣大盤」或「扣大盤＋類股」時篩這個）；扣過的 R 通常比原始 R 低很多'],
+  ['excess_r_mode', '門檻方式', 'sel', '', '固定＝用上面的數字；每日自適應＝每天從不同產業的隨機配對算出「只有 0.5% 會達到」的扣指數 R 當門檻（限制在 0.25～0.6 之間）。研究（exp1b）：每天會落在 0.29～0.48，組數只稍微穩一點；門檻每天不同，跨天的組數不能直接比'],
   ['intraday_sessions', '分時天數', 'int', '', ''],
   ['peak_gap', '高點差 ≤（分）', 'int', '', '日內最高點（09:00–13:00）的時間差。高點時間的精度跟著分 K：1 分 K（約 30 天內）精確到分鐘；只有 5 分 K 的舊日子只會落在 0、5、10…分，所以 6～9 跟 5 效果一樣'],
   ['start_gap', '起漲差 ≤（分）', 'opt', '', '空白＝只顯示、不篩選'],
@@ -43,11 +44,14 @@ export const FIELDS = [
 
 /** The thresholds that decide a group, in a few words (盤後報告's header). */
 export function condText(p) {
-  const intraday = p.intraday_basis && p.intraday_basis !== 'raw' ? `${BASES[p.intraday_basis]}後分時 R ≥ ${p.excess_r}` : `分時 R ≥ ${p.intraday_r}`;
+  const thr = p.excess_r_mode === 'adaptive' ? '每日自適應門檻' : p.excess_r;
+  const intraday = p.intraday_basis && p.intraday_basis !== 'raw' ? `${BASES[p.intraday_basis]}後分時 R ≥ ${thr}` : `分時 R ≥ ${p.intraday_r}`;
   return `日 R ≥ ${p.daily_r}（找法2 ${p.new_daily_r}）、${intraday}、高點差 ≤ ${p.peak_gap} 分、群內 ${p.dense}`;
 }
 
 export const BASES = { sector: '扣大盤＋類股', market: '扣大盤', raw: '原始' };
+export const EXCESS_MODES = { fixed: '固定', adaptive: '每日自適應' };
+const SEL_OPTIONS = { intraday_basis: BASES, excess_r_mode: EXCESS_MODES }; // kind 'sel': its options, the first the default
 
 export function queryOf(method, params) {
   const q = new URLSearchParams({ method });
@@ -471,7 +475,7 @@ const DEFAULTS = {
   min_volume_lots: 300,
   new_min_volume_lots: 300,
   daily_r: 0.8, daily_window: 20, new_daily_r: 0.8, new_daily_window: 10, pool_top: 50,
-  intraday_basis: 'sector', intraday_r: 0.5, excess_r: 0.4, intraday_sessions: 3, peak_gap: 8, start_gap: '', require_burst: false, dense: 0.7, min_size: 2,
+  intraday_basis: 'sector', intraday_r: 0.5, excess_r: 0.4, excess_r_mode: 'fixed', intraday_sessions: 3, peak_gap: 8, start_gap: '', require_burst: false, dense: 0.7, min_size: 2,
   vol_ratio_window: 5,
   groupings: DEFAULT_GROUPINGS, pool_sources: Object.keys(SOURCES),
 };
@@ -555,7 +559,7 @@ export function mountFinderPanel(container, { onStock, onResult }) {
         const v = p[key];
         const input =
           kind === 'sel'
-            ? `<select class="field" data-key="${key}">${Object.entries(BASES).map(([k, l]) => `<option value="${k}"${k === (v || 'sector') ? ' selected' : ''}>${l}</option>`).join('')}</select>`
+            ? `<select class="field" data-key="${key}">${Object.entries(SEL_OPTIONS[key]).map(([k, l], i) => `<option value="${k}"${k === (v || Object.keys(SEL_OPTIONS[key])[0]) ? ' selected' : ''}>${l}</option>`).join('')}</select>`
             : kind === 'bool'
             ? `<input type="checkbox" data-key="${key}"${v ? ' checked' : ''}>`
             : `<input class="field" data-key="${key}" data-kind="${kind}" value="${escapeHtml(v ?? '')}" size="4">`;
