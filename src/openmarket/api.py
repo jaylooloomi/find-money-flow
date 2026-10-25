@@ -754,9 +754,9 @@ def create_app(
                                                       "gap_pct": pct(r.get("open"), r.get("prev_close")), "intraday_pct": pct(r.get("close"), r.get("open"))}
                                                   for c, r in rows.items()}}
 
-    # the oldest FINDER_VERSION whose groups are those of today's: 9 fixed the session alignment, 10 only
-    # added shape_pairs — the next-day statistics take both
-    NEXT_DAY_MIN_VERSION = 9
+    # the oldest FINDER_VERSION whose results the next-day statistics take: 11 changed 同爆量 (≥ 3 and 3 ×
+    # chance), which moves the evidence classes; all 60 stored days were recomputed under it
+    NEXT_DAY_MIN_VERSION = 11
 
     @app.get("/api/history/next-day")
     def history_next_day(request: Request) -> dict:
