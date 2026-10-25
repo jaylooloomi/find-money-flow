@@ -499,6 +499,7 @@ table.link-heat td.self { background: #3a3e48; }
 .rp-hot .rp-line { margin-left: 0; }
 .rp-top { border: 1px solid #ffd40055; background: #ffd4000d; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; font-size: 13px; }
 .rp-top ul { margin: 2px 0 0; padding-left: 18px; line-height: 1.7; }
+.rp-pull { border: 1px solid #3ddc8455; background: #3ddc840d; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; }
 .rp-shape { border: 1px solid #5b8cff55; background: #5b8cff0d; border-radius: 6px; padding: 6px 10px; margin-bottom: 10px; }
 .rp-next { margin: 4px 0 2px; }
 .rp-next td, .rp-next th { padding: 3px 6px; }

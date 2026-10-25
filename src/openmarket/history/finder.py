@@ -484,6 +484,30 @@ def laggards(g: Mapping, rows: list[dict], groupings: Mapping[str, Callable[[dic
             "stocks": [{"code": r["code"], "name": r["name"], "change_pct": round(r["change_pct"], 2)} for r in lag[:LAGGARDS_MAX]]}
 
 
+CHASE_VOL = 1.5  # a laggard trading ≥ this × its 5-day volume …
+CHASE_R = 0.6  # … that usually moves with the group (mean daily R over 20 days) and still rose today
+
+
+def flag_chasers(g: Mapping, vol_ratio: Mapping[str, float], series: Mapping[str, list]) -> dict:
+    """The group's laggards with chase = True on the ones rising on volume that usually move with the group
+    (research/exp8 C4: they fell back the next day, −1.63% vs the market, 22% up — a 跟風 that fails)."""
+    lag = g.get("laggards")
+    if not lag:
+        return lag
+    members = [m["code"] for m in g.get("members", [])]
+
+    def mean_r(c):
+        rs = [r for m in members if (r := series_r(series.get(c, []), series.get(m, []), 10)) is not None]
+        return sum(rs) / len(rs) if rs else None
+
+    out = []
+    for s in lag["stocks"]:
+        r = mean_r(s["code"])
+        chase = (s.get("change_pct") or 0) > 0 and (vol_ratio.get(s["code"]) or 0) >= CHASE_VOL and r is not None and r >= CHASE_R
+        out.append({**s, "chase": chase})
+    return {**lag, "stocks": out}
+
+
 def kind_of(matches: list[dict], size: int) -> str:
     """已知族群: all in one known group; 延伸: at least half and at least 2 of them in one (the rest
     are the stocks that 'should not' move with it); otherwise 跨族群新組合 (a lone member in some

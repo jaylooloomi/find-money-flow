@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { concHtml, goneReading, highlights, hotByMultiple, highlightsHtml, isSurge, shapeHtml, shapeList, hotHtml, hotNextDay, laggardsHtml, todayMove, mergeGroups, motiveOf, reportText, trackHtml, trackRows, watchOf } from '../../static/js/report.js';
+import { concHtml, goneReading, highlights, hotByMultiple, pullbackHtml, highlightsHtml, isSurge, shapeHtml, shapeList, hotHtml, hotNextDay, laggardsHtml, todayMove, mergeGroups, motiveOf, reportText, trackHtml, trackRows, watchOf } from '../../static/js/report.js';
 import { groupEvidenceItems } from '../../static/js/evidence.js';
 
 const m = (code, name = code) => ({ code, name, change_pct: 5 });
@@ -201,4 +201,15 @@ test('the 證據強 highlight says what the backtest found', () => {
   const g = grp(['1', '2'], { excess: true, baseline: true, burst: true, sync: true, samedir: true });
   const top = highlights(mergeGroups({ groups: [g] }, null), []);
   assert.match(top.find((t) => t.startsWith('證據強')), /回測 60 天：證據多的組合後續不一定較強/);
+});
+
+test('pullbackHtml and the ⚠ on a laggard chasing on volume', () => {
+  const html = pullbackHtml({ stocks: [{ code: '3037', name: '欣興', close: 865, ma: 880.5, gap_pct: -1.76, since: '2026-10-16', with: ['南電'] }] });
+  assert.match(html, /回測 10 日線 <small class="muted">1 檔/);
+  assert.match(html, /收 865／10 日線 880\.5（-1\.76%）；10-16 與 南電 同步/);
+  assert.equal(pullbackHtml({ stocks: [] }), '');
+  const lag = laggardsHtml({ laggards: { label: '細產業', group: 'X', stocks: [{ code: '1', name: '甲', change_pct: 1, chase: true }, { code: '2', name: '乙', change_pct: 0.2 }] } });
+  assert.match(lag, /甲 <small class="up">\+1\.00%<\/small> <b class="down"[^>]*>⚠ 帶量跟漲<\/b>/);
+  assert.equal((lag.match(/⚠/g) || []).length, 1);
+  assert.match(highlights([], [], [], [{ name: '欣興' }]).join(), /回測 10 日線（同步族群的觀察名單）：欣興/);
 });

@@ -445,6 +445,49 @@ def evidence_class(n: int) -> str:
     return "ev4" if n >= 4 else "ev2" if n >= 2 else "ev0"
 
 
+PULLBACK_DAYS = 10  # a tight sync within this many trading days before
+PULLBACK_MA = 10  # the moving average a pullback reaches
+TIGHT_SYNC_EVIDENCE = 4  # ≥ this many of the server's 5 checks …
+TIGHT_SYNC_EXCESS = 0.6  # … or the group's excess R at least this
+
+
+def is_tight_sync(group: Mapping) -> bool:
+    """A group that moved in tight sync (the user's 同步強): ≥ 4 of the 5 server checks or excess R ≥ 0.6."""
+    return evidence_yes(group) >= TIGHT_SYNC_EVIDENCE or (group.get("excess_r") or 0) >= TIGHT_SYNC_EXCESS
+
+
+def pullbacks(day: date, days: list[date], synced: list[tuple[date, list[dict]]], closes: Mapping[str, Mapping[date, float]]) -> list[dict]:
+    """回測均線觀察名單 (research/exp8): members of a tight-sync group of the PULLBACK_DAYS trading days before
+    `day` whose close today is at or under their PULLBACK_MA-day average for the first time since the group
+    — waiting for the next wave rather than chasing the sync. days: trading days, oldest first; synced:
+    [(group day, members [{code, name}])]; closes: {code: {day: close}}. The deepest under the average first."""
+    if day not in days:
+        return []
+    i = days.index(day)
+
+    def ma(code: str, k: int) -> float | None:
+        xs = [closes.get(code, {}).get(x) for x in days[max(0, k - PULLBACK_MA + 1):k + 1]]
+        xs = [x for x in xs if x]
+        return sum(xs) / len(xs) if len(xs) == PULLBACK_MA else None
+
+    out: dict[str, dict] = {}
+    for gday, members in synced:
+        if gday not in days:
+            continue
+        g = days.index(gday)
+        if not (i - PULLBACK_DAYS <= g < i):
+            continue
+        for m in members:
+            c = m["code"]
+            under = [k for k in range(g + 1, i + 1) if (cl := closes.get(c, {}).get(days[k])) and (a := ma(c, k)) and cl <= a]
+            if under and under[0] == i:  # today is the first touch since the sync
+                close, avg = closes[c][day], ma(c, i)
+                if c not in out or gday > date.fromisoformat(out[c]["since"]):
+                    out[c] = {"code": c, "name": m.get("name", c), "since": gday.isoformat(), "with": [x.get("name", x["code"]) for x in members if x["code"] != c],
+                              "close": close, "ma": round(avg, 2), "gap_pct": round((close / avg - 1) * 100, 2)}
+    return sorted(out.values(), key=lambda x: x["gap_pct"])
+
+
 def next_day_stats(results: list[tuple[date, list[list[str]]]], class_of, rows_on, next_of, index_pct, parents: Mapping[str, str] | None = None) -> dict:
     """隔天表現 of N's groups by class: results [(day, [member codes per group])], class_of(day, codes) →
     'hot'／'rest' or any other class name (True/False read as hot/rest), rows_on(day) → {code: row},

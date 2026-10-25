@@ -25,9 +25,10 @@ from .explain import explain_day
 from .history.linkage import (
     pearson,
     INTRADAY_HIGH_R, INTRADAY_LOW_R, bucket_closes, daily_linkage, fmt_minute, pair_matrix, peak_minute_from_bars, peak_minute_from_ticks,
-    align_bars, amplitude_pct, limit_down_pct, limit_up_pct, minute_bars, turnover_rate, peak_stats, tick_bars, with_close_bar, race_points, returns, locked_level, daily_k, index_k, daytrade_ratios, daytrade_group, evidence_class, evidence_yes, hot_class, next_day_stats, DAYTRADE_BASE_DAYS, DAYTRADE_HOT, top_members, verdict_r, verdict_timing,
+    align_bars, amplitude_pct, limit_down_pct, limit_up_pct, minute_bars, turnover_rate, peak_stats, tick_bars, with_close_bar, race_points, returns, locked_level, daily_k, index_k, daytrade_ratios, daytrade_group, evidence_class, evidence_yes, hot_class, is_tight_sync, next_day_stats, pullbacks,
+    PULLBACK_DAYS, PULLBACK_MA, DAYTRADE_BASE_DAYS, DAYTRADE_HOT, top_members, verdict_r, verdict_timing,
 )
-from .history.finder import INST_STREAK_DAYS, INTRADAY_BASES, FinderParams, laggards, inst_streak, inst_summary, margin_changes, margin_summary, pair_extras, persistence, run_search
+from .history.finder import FINDER_VERSION, INST_STREAK_DAYS, INTRADAY_BASES, FinderParams, daily_series, flag_chasers, laggards, volume_ratio, inst_streak, inst_summary, margin_changes, margin_summary, pair_extras, persistence, run_search
 from .history.finder import news_themes as finder_news_themes  # api.py has its own news_themes route
 from .intraday import IntradayRecorder
 from .sources.yahoo_intraday import INDEX_SYMBOLS, ONE_MINUTE_DAYS, fetch_bars, fetch_day_1m, fetch_span_1m
@@ -808,6 +809,26 @@ def create_app(
         stats["evidence"] = {k: v for k, v in by_evidence.items() if k not in ("hot", "rest")}
         return {"days": len(results), "first": results[0][0].isoformat() if results else None, "last": results[-1][0].isoformat() if results else None, "stats": stats}
 
+    @app.get("/api/history/pullbacks")
+    def history_pullbacks(request: Request) -> dict:
+        """回測均線觀察名單 for `date` under the given 條件: members of a tight-sync N group of the 10 trading
+        days before that close at or under their 10-day average for the first time today (research/exp8)."""
+        store = app.state.history
+        d = _day(request.query_params.get("date", ""))
+        p = finder_params(request.query_params)
+        days_all = sorted(store.trading_dates(up_to=d, limit=PULLBACK_DAYS + PULLBACK_MA + 5))
+        key = p.key() + "|" + ",".join(sorted(p.groupings))
+        window = set(days_all[-(PULLBACK_DAYS + 1):-1])
+        synced = []
+        for method in ("known", "new"):
+            for gd, res in store.finder_days(method, key, any_version=True, min_version=FINDER_VERSION, groupings=p.groupings):
+                if gd in window:
+                    synced += [(gd, g["members"]) for g in res.get("groups", []) if is_tight_sync(g)]
+        codes = sorted({m["code"] for _, ms in synced for m in ms})
+        quotes = store.quotes(days_all, codes)
+        closes = {c: {x: q[c]["close"] for x, q in quotes.items() if c in q and q[c].get("close")} for c in codes}
+        return {"date": d.isoformat(), "synced_groups": len(synced), "stocks": pullbacks(d, days_all, synced, closes)}
+
     @app.get("/api/history/index-race")
     async def index_race_day(day: str = Query(..., alias="date")) -> dict:
         """大盤／櫃買 of one day, for K's chart when a 5 日 K candle picks another day."""
@@ -1022,9 +1043,14 @@ def create_app(
                 return {**grp, "branches": group_branches(codes, stored_branches), "concentration": conc or None}
 
             groups = [with_branches(grp) for grp in groups]
-            # 補漲候選: the rest of each group's known home that has not moved yet
+            # 補漲候選: the rest of each group's known home that has not moved yet; ⚠ on the ones rising on volume
+            # that usually move with the group (research/exp8: the next day −1.63% vs the market, 22% up)
             day_rows = list(by_code.values())
             groups = [{**grp, "laggards": laggards(grp, day_rows, groupings)} for grp in groups]
+            if any(grp["laggards"] for grp in groups):
+                vr = volume_ratio(store, d, 5)
+                series = daily_series(store, d, 20)
+                groups = [{**grp, "laggards": flag_chasers(grp, vr, series)} if grp["laggards"] else grp for grp in groups]
             return {**res, "groups": finder_news_themes(groups, news, [x.isoformat() for x in news_dates])}
 
         if not refresh:

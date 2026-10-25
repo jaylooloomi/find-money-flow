@@ -215,7 +215,7 @@ export function isSurge(g) {
  * 今天重點: at most five lines of what stands out today, from what the report already worked out —
  * 突然湧入 hot money, 疑似出貨, 證據強, a run of days, and the closest 高點錯開 pair. [text]
  */
-export function highlights(list, rows, shapes = []) {
+export function highlights(list, rows, shapes = [], pulls = []) {
   const out = [];
   const names = (xs) => xs.slice(0, 3).join('／') + (xs.length > 3 ? ` 等 ${xs.length} 組` : '');
   const surge = list.filter((x) => isSurge(x.g)).map((x) => namesOf(x.g));
@@ -226,16 +226,17 @@ export function highlights(list, rows, shapes = []) {
   if (strong.length) out.push(`證據強（同步得很整齊；回測 60 天：證據多的組合後續不一定較強）：${names(strong)}`);
   const runs = rows.filter((r) => r.streak >= 2 && r.cells.at(-1) != null).map((r) => `${r.names}（連 ${r.streak + 1} 天）`);
   if (runs.length) out.push(`連續出現：${names(runs)}`);
+  if (pulls?.length) out.push(`回測 10 日線（同步族群的觀察名單）：${pulls.slice(0, 3).map((x) => x.name).join('、')}${pulls.length > 3 ? ` 等 ${pulls.length} 檔` : ''}`);
   if (shapes.length) out.push(`高點錯開但走勢一樣：${shapes.slice(0, 2).map((x) => x.members.map((m) => m.name).join('＋')).join('／')}${shapes.length > 2 ? ` 等 ${shapes.length} 對` : ''}`);
   return out.slice(0, 5);
 }
 
 /** The report as plain text (複製成文字: for notes or a chat). */
-export function reportText(date, index, list, rows, hotStats = null, shapes = []) {
+export function reportText(date, index, list, rows, hotStats = null, shapes = [], pulls = []) {
   const lines = [`${date} 盤後報告`];
   if (index.length) lines.push(index.map((b) => `${b.name} ${fmtPct(b.change_pct)}`).join('　'));
   lines.push(`找到 ${list.length} 組，證據強 ${list.filter((x) => x.strong).length} 組，連續出現 ${rows.filter((r) => r.streak >= 1 && r.cells.at(-1) != null).length} 組`);
-  const top = highlights(list, rows, shapes);
+  const top = highlights(list, rows, shapes, pulls);
   if (top.length) lines.push('', '今天重點：', ...top.map((t) => `・${t}`));
   const hot = hotByMultiple(list);
   if (hot.length) {
@@ -273,11 +274,26 @@ export function reportText(date, index, list, rows, hotStats = null, shapes = []
 
 // ---- HTML ---------------------------------------------------------------------------------------
 
+const CHASE_TIP = '落後股今天帶量上漲（量比 ≥ 1.5），而且平常跟這組高度連動（20 日相關 ≥ 0.6）。回測 60 天（study 分支 exp8）：這類隔天平均跑輸大盤 1.63%，只有 22% 收紅，5 天後仍 −1.22%——帶量追漲常是假突破';
+
+/** 回測 10 日線觀察名單 (research/exp8): members of a tight-sync group of the last 10 days at or under
+ *  their 10-day average for the first time today. Shown only, not a recommendation. */
+export function pullbackHtml(res) {
+  const list = res?.stocks || [];
+  if (!list.length) return '';
+  const rows = list
+    .map((x) => `<li><button type="button" class="rp-stock" data-code="${escapeHtml(x.code)}">${escapeHtml(x.name)}</button>
+      <small class="muted">收 ${x.close}／10 日線 ${x.ma}（${fmtPct(x.gap_pct)}）；${escapeHtml(x.since.slice(5))} 與 ${escapeHtml(x.with.join('、'))} 同步</small></li>`)
+    .join('');
+  return `<div class="rp-pull" title="過去 10 個交易日內同步很強（證據 ✓ ≥ 4，或扣指數 R ≥ 0.6）的組合成員，今天第一次收在 10 日線以下：等下一波資金，而不是追同步當天。回測 60 天（study 分支 exp8）：在這種回測點買，10 天後平均跑贏大盤 4.31%（勝率 55%），同步當天就買只有 1.63%（42%）。只是統計，不是交易建議">
+    <h3 class="rp-h">回測 10 日線 <small class="muted">${list.length} 檔；同步族群的觀察名單</small></h3><ul class="rp-hot-list">${rows}</ul></div>`;
+}
+
 /** 補漲候選: the same known group's stocks that have not followed yet (where the money may go next). */
 export function laggardsHtml(g) {
   const l = g.laggards;
   if (!l?.stocks?.length) return '';
-  const cells = l.stocks.map((s) => `<button type="button" class="rp-stock" data-code="${escapeHtml(s.code)}" title="${escapeHtml(s.code)}：開資訊卡">${escapeHtml(s.name)} <small class="${s.change_pct > 0 ? 'up' : s.change_pct < 0 ? 'down' : ''}">${fmtPct(s.change_pct)}</small></button>`);
+  const cells = l.stocks.map((s) => `<button type="button" class="rp-stock" data-code="${escapeHtml(s.code)}" title="${escapeHtml(s.code)}：開資訊卡">${escapeHtml(s.name)} <small class="${s.change_pct > 0 ? 'up' : s.change_pct < 0 ? 'down' : ''}">${fmtPct(s.change_pct)}</small>${s.chase ? ` <b class="down" title="${escapeHtml(CHASE_TIP)}">⚠ 帶量跟漲</b>` : ''}</button>`);
   return `<div class="rp-line" title="同一個已知分類裡、今天漲不到這組平均一半的股票（成交值大的先列）。回測（study 分支 exp6，60 天）：這些股票之後 5 天平均只跑贏大盤 0.74%，遠不如組合本身的 +2.22%——資金多半留在原本那幾檔，沒有明顯擴散。只是參考，不是買進建議"><span class="muted">同族群未跟上（${escapeHtml(l.label)}：${escapeHtml(l.group)}）</span> ${cells.join(' ')}</div>`;
 }
 
@@ -368,6 +384,16 @@ export function mountReportPanel(container, { onStock, query, condText }) {
     };
     let index;
     let per;
+    // 回測 10 日線 for the report day (stored results only), fetched alongside
+    state.pullbacks = null;
+    fetch(`/api/history/pullbacks?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(query ? query('known') : {})), date })}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((x) => {
+        if (t !== state.ticket || !x) return;
+        state.pullbacks = x;
+        if (state.last?.[0] === date) draw(...state.last);
+      })
+      .catch(() => {});
     // 隔天表現 over every stored day under these 條件 (🔥 against the rest), fetched alongside
     state.wide = null;
     fetch(`/api/history/next-day?${new URLSearchParams(query ? query('known') : {})}`)
@@ -465,16 +491,17 @@ export function mountReportPanel(container, { onStock, query, condText }) {
       ? `<button type="button" class="icon wide rp-gone">${state.allGone ? '收起消失的組合' : `其餘 ${gone.length - GONE_SHOWN} 組消失的組合`}</button>`
       : '';
     const hotStats = hotNextDay(dates, per, state.nextQuotes || {});
-    state.text = reportText(date, bench, list, rows, hotStats, shapeList(state.dayResults || []));
+    state.text = reportText(date, bench, list, rows, hotStats, shapeList(state.dayResults || []), state.pullbacks?.stocks || []);
     const strong = list.filter((x) => x.strong).length;
     const going = rows.filter((r) => r.streak >= 1 && r.cells.at(-1) != null).length;
     const metric = (label, value) => `<div class="rp-metric"><small>${label}</small><b>${value}</b></div>`;
     // 摘要 across the top; the day's groups (A1) on the left, 跨天追蹤 (A3) on the right
     body.innerHTML = `<div class="rp-metrics">${metric('找到群組', list.length)}${metric('證據強', strong)}${metric('連續出現', going)}${metric('大盤／櫃買', bench.map((b) => `<span class="${b.change_pct > 0 ? 'up' : 'down'}">${fmtPct(b.change_pct)}</span>`).join(' / ') || '—')}</div>
-      ${highlightsHtml(highlights(list, rows, shapeList(state.dayResults || [])))}
+      ${highlightsHtml(highlights(list, rows, shapeList(state.dayResults || []), state.pullbacks?.stocks || []))}
       <div class="rp-cols"><div class="rp-left">
         ${hotHtml(list, hotStats, state.wide)}
         ${shapeHtml(state.dayResults || [])}
+        ${pullbackHtml(state.pullbacks)}
         <h3 class="rp-h">${escapeHtml(date)} 找到的群組</h3>
         ${list.length ? list.map((x, k) => groupHtml(x, k, rows.find((r) => r.key === x.key))).join('') : '<p class="hint">這一天沒有找到群組（或 N 還沒算完，稍後再開）。</p>'}
       </div><div class="rp-right">

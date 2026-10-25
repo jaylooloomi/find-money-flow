@@ -800,3 +800,15 @@ def test_finder_days_takes_a_day_stored_without_news(tmp_path):
     s.save_finder(date(2026, 8, 5), "known", head + "|group,industry", {"groups": [{"tag": "集團 ticked"}]})
     got = s.finder_days("known", head + "|chain,industry,news", any_version=True, groupings=("industry", "chain", "news"))
     assert [r["groups"][0]["tag"] for _, r in got] == ["with news", "no news that day"]  # not the one with 集團
+
+
+
+def test_flag_chasers_marks_the_laggard_rising_on_volume_that_moves_with_the_group():
+    from openmarket.history.finder import flag_chasers
+
+    base = [0.5, -0.3, 1.0, -0.8, 0.2, 0.9, -0.4, 0.3, -1.1, 0.6, 0.7, -0.2]
+    series = {"A": base, "B": [x * 1.1 for x in base], "C": base[:], "D": [(-1) ** i for i in range(12)]}
+    g = {"members": [{"code": "A"}, {"code": "B"}], "laggards": {"label": "細產業", "group": "X",
+         "stocks": [{"code": "C", "change_pct": 1.0}, {"code": "D", "change_pct": 1.0}, {"code": "E", "change_pct": -1.0}]}}
+    out = flag_chasers(g, {"C": 2.0, "D": 2.0, "E": 3.0}, series)
+    assert [s["chase"] for s in out["stocks"]] == [True, False, False]  # D does not move with them; E fell

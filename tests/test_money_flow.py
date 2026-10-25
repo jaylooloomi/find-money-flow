@@ -350,3 +350,24 @@ def test_evidence_classes_of_stored_groups():
     g = {"evidence": {"excess": {"ok": True}, "baseline": {"ok": True}, "burst": {"ok": None}, "sync": {"ok": False}, "samedir": {"ok": True}}}
     assert evidence_yes(g) == 3 and evidence_class(3) == "ev2"
     assert evidence_yes({}) == 0 and evidence_class(0) == "ev0" and evidence_class(5) == "ev4"
+
+
+
+def test_pullbacks_first_touch_of_the_10_day_average_after_a_tight_sync():
+    from datetime import timedelta
+
+    from openmarket.history.linkage import is_tight_sync, pullbacks
+
+    days = [date(2026, 9, 1) + timedelta(days=i) for i in range(25)]
+    up = {d: 100 + i for i, d in enumerate(days)}  # rising: always above its average
+    dip = dict(up)
+    dip[days[-1]] = 100  # falls under its 10-day average on the last day
+    dip_early = dict(dip)
+    dip_early[days[-3]] = 100  # … but had touched it two days before already
+    closes = {"A": dip, "B": up, "C": dip_early}
+    members = [{"code": c, "name": n} for c, n in (("A", "甲"), ("B", "乙"), ("C", "丙"))]
+    got = pullbacks(days[-1], days, [(days[-5], members)], closes)
+    assert [x["code"] for x in got] == ["A"]  # B never pulled back, C's first touch was earlier
+    assert got[0]["with"] == ["乙", "丙"] and got[0]["gap_pct"] < 0
+    assert pullbacks(days[-1], days, [(days[0], members)], closes) == []  # the sync is older than 10 days
+    assert is_tight_sync({"excess_r": 0.65}) and not is_tight_sync({"excess_r": 0.5, "evidence": {}})
