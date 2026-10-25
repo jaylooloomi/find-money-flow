@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import csv
 import json
 import logging
 import mimetypes
@@ -1484,6 +1485,25 @@ def create_app(
     @app.delete("/api/groups/{name}/{code}")
     def remove_from_group(name: str, code: str) -> dict:
         return _groups_call(groups.remove, name, code)
+
+    @app.get("/api/research/etf-premium")
+    def research_etf_premium() -> dict:
+        """分頁4: the ETF 溢價 study's outputs as they stand (research/etf_premium/results), read from disk."""
+        out = Path(__file__).resolve().parents[2] / "research" / "etf_premium" / "results"
+
+        def rows(name: str) -> list[dict]:
+            p = out / name
+            if not p.exists():
+                return []
+            with p.open(encoding="utf-8-sig") as f:
+                return list(csv.DictReader(f))
+
+        def text(name: str) -> str | None:
+            p = out / name
+            return p.read_text(encoding="utf-8") if p.exists() else None
+
+        return {"coverage": rows("coverage.csv"), "feasibility": text("feasibility.md"), "summary": text("summary.md"),
+                "main_table": rows("main_table.csv"), "robustness": text("robustness.md")}
 
     if static_dir.is_dir():
         # Windows takes MIME types from the registry, where .js may not be text/javascript;

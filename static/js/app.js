@@ -647,6 +647,7 @@ function setMode(mode) {
   $('#histControls').hidden = live;
   $('#historyTab2').hidden = live || $('#historyView').dataset.tab !== '2'; // 歷史 分頁2／3 (history.js)
   $('#historyTab3').hidden = live || $('#historyView').dataset.tab !== '3';
+  $('#historyTab4').hidden = live || $('#historyView').dataset.tab !== '4';
   for (const b of $('#modeSwitch').querySelectorAll('button')) {
     b.classList.toggle('on', b.dataset.mode === mode);
     b.setAttribute('aria-pressed', String(b.dataset.mode === mode));

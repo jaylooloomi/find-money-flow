@@ -514,3 +514,13 @@ table.link-heat td.self { background: #3a3e48; }
 .rp-track th:nth-last-child(2) { width: 15%; }
 .rp-track td:first-child, .rp-track td:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 760px) { .rp-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* 分頁4 · ETF 溢價研究 (etfstudy.js) */
+.es-body { padding: 8px 12px; max-width: 1100px; overflow-x: auto; }
+.es-md h2, .es-md h3, .es-md h4 { margin: 14px 0 6px; }
+.es-md p, .es-md li { line-height: 1.6; }
+.es-table { border-collapse: collapse; font-size: 12px; margin: 6px 0 12px; }
+.es-table th, .es-table td { border-bottom: 1px solid #ffffff1a; padding: 3px 8px; text-align: right; white-space: nowrap; }
+.es-table th:first-child, .es-table td:first-child, .es-table td:nth-child(2) { text-align: left; }
+.es-table tr.down td { color: #ff6b6b; }
+.es-table tr.warn td { color: #f5c542; }
+.hEtfStudy details summary { cursor: pointer; margin: 8px 0; }
