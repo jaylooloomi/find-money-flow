@@ -348,3 +348,11 @@ test('扣第 1 主成分 is one more 分時 R basis', async () => {
   assert.equal(BASES.pca1, '扣第 1 主成分');
   assert.match(condText({ daily_r: 0.8, new_daily_r: 0.8, intraday_basis: 'pca1', excess_r: 0.4, peak_gap: 8, dense: 0.7 }), /扣第 1 主成分後分時 R ≥ 0\.4/);
 });
+
+test('組群方式: 七成規則 (default) or 社群偵測', async () => {
+  const { GROUP_METHODS } = await import('../../static/js/finder.js');
+  assert.deepEqual(Object.keys(GROUP_METHODS), ['dense', 'community']);
+  const p = { daily_r: 0.8, new_daily_r: 0.8, intraday_basis: 'sector', excess_r: 0.4, peak_gap: 8, dense: 0.7 };
+  assert.match(condText(p), /群內 0\.7$/);
+  assert.match(condText({ ...p, group_method: 'community' }), /社群偵測$/);
+});

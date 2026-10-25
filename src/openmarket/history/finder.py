@@ -66,6 +66,7 @@ class FinderParams:
     max_fetch: int = 400  # at most this many stocks get intraday bars (largest candidate sets first)
     # added 2026-10-26, off by default (OPTIONAL_DEFAULTS): 扣指數門檻 fixed or set each day from random pairs
     excess_r_mode: str = "fixed"  # EXCESS_R_MODES
+    group_method: str = "dense"  # GROUP_METHODS: how the passing pairs become groups (dense = 群內至少 dense)
 
     def key(self) -> str:
         # list-type settings are sets: the same groupings in another order are the same search; a setting added
@@ -76,7 +77,8 @@ class FinderParams:
 
 
 EXCESS_R_MODES = ("fixed", "adaptive")
-OPTIONAL_DEFAULTS = {"excess_r_mode": "fixed"}  # settings added after results were stored (see FinderParams.key)
+GROUP_METHODS = ("dense", "community")
+OPTIONAL_DEFAULTS = {"excess_r_mode": "fixed", "group_method": "dense"}  # settings added after results were stored (see FinderParams.key)
 ADAPTIVE_Q = 0.995  # 自適應: the excess R that only 0.5% of the day's random cross-industry pairs reach (research/exp1b)
 ADAPTIVE_PAIRS = 3000
 ADAPTIVE_BOUNDS = (0.25, 0.6)  # never looser or tighter than this, whatever the day's pairs say
@@ -179,6 +181,40 @@ def daily_edges(codes: Iterable[str], series: Mapping[str, list] | PairR, thresh
         if r is not None and r >= threshold:
             out[frozenset((a, b))] = r
     return out
+
+
+def communities(edges: Iterable[frozenset], min_size: int) -> list[list[str]]:
+    """社群偵測 (research/m3: cluster the graph of pairs that passed, instead of the 七成 rule): greedy modularity
+    (Newman) — start from single stocks and keep merging the two linked groups whose merge adds the most
+    modularity, ΔQ = L_ij/m − d_i·d_j/(2m²), while it adds any. A group with ≥ min_size stocks is kept."""
+    edges = {e for e in edges if len(e) == 2}
+    m = len(edges)
+    if not m:
+        return []
+    deg: dict[str, int] = {}
+    for e in edges:
+        for v in e:
+            deg[v] = deg.get(v, 0) + 1
+    comm = {v: frozenset([v]) for v in deg}  # label → members
+    of = {v: v for v in deg}
+    while True:
+        links: dict[tuple[str, str], int] = {}
+        for e in edges:
+            a, b = (of[v] for v in e)
+            if a != b:
+                k = (a, b) if a < b else (b, a)
+                links[k] = links.get(k, 0) + 1
+        if not links:
+            break
+        dsum = {c: sum(deg[v] for v in ms) for c, ms in comm.items()}
+        # the largest gain; on a tie the first pair in sorted order (max keeps the first maximum)
+        gain, (x, y) = max(((n / m - dsum[a] * dsum[b] / (2 * m * m), (a, b)) for (a, b), n in sorted(links.items())), key=lambda t: t[0])
+        if gain <= 0:
+            break
+        comm[x] = comm[x] | comm.pop(y)
+        for v in comm[x]:
+            of[v] = x
+    return sorted((sorted(g) for g in comm.values() if len(g) >= min_size), key=lambda g: (-len(g), g))
 
 
 def dense_cores(edges: Iterable[frozenset], dense: float, min_size: int) -> list[list[str]]:
@@ -448,13 +484,16 @@ def confirm(candidates: list[dict], feats: Mapping[str, Intraday], p: FinderPara
             else:
                 outcome.setdefault(e, "沒有分 K")
         ok = [e for e, ch in checks.items() if ch["ok"]]
-        for core in dense_cores(ok, p.dense, p.min_size):
+        for core in (communities(ok, p.min_size) if p.group_method == "community" else dense_cores(ok, p.dense, p.min_size)):
             key = tuple(core)
             if key in seen:
                 continue
             seen.add(key)
             inside = {e: ch for e, ch in checks.items() if e <= set(core)}
             found.append({**c, "members": core, "pairs": inside, "daily": {e: r for e, r in c.get("daily", {}).items() if e <= set(core)}})
+    if p.group_method == "community":  # one cluster found from several candidate sets: keep the largest only
+        sets = [set(g["members"]) for g in found]
+        found = [g for i, g in enumerate(found) if not any(i != j and sets[i] < sets[j] for j in range(len(found)))]
     if funnel is not None:
         rejected: dict[str, int] = {}
         for why in outcome.values():

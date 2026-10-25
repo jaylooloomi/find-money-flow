@@ -866,3 +866,19 @@ def test_first_component_finds_the_common_move_and_add_pca1_takes_it_out():
     assert raw > 0.8 and abs(res) < 0.3  # two stocks that only share the market: nothing left
     assert pearson(feats["S0"].excess, feats["S1"].excess) > 0.6  # a pair with its own money: kept
     assert first_component([[1.0] * 30] * 3) is None  # too few stocks
+
+
+def test_communities_split_two_linked_clusters_the_dense_rule_handles_differently():
+    from dataclasses import replace
+
+    from openmarket.history.finder import FinderParams, communities, dense_cores
+
+    e = lambda a, b: frozenset((a, b))  # noqa: E731
+    # two triangles joined by one bridge C–D
+    edges = [e("A", "B"), e("B", "C"), e("A", "C"), e("D", "E"), e("E", "F"), e("D", "F"), e("C", "D")]
+    assert communities(edges, 2) == [["A", "B", "C"], ["D", "E", "F"]]
+    # a chain A–B–C–D: the 七成 rule keeps only a dense part, label propagation keeps it whole or splits it in two
+    chain = [e("A", "B"), e("B", "C"), e("C", "D")]
+    assert all(len(g) >= 2 for g in communities(chain, 2))
+    assert communities([], 2) == [] and dense_cores([], 0.7, 2) == []
+    assert "group_method" not in FinderParams().key() and replace(FinderParams(), group_method="community").key() != FinderParams().key()

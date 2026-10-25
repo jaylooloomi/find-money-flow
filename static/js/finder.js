@@ -38,7 +38,8 @@ export const FIELDS = [
   ['peak_gap', '高點差 ≤（分）', 'int', '', '日內最高點（09:00–13:00）的時間差。高點時間的精度跟著分 K：1 分 K（約 30 天內）精確到分鐘；只有 5 分 K 的舊日子只會落在 0、5、10…分，所以 6～9 跟 5 效果一樣'],
   ['start_gap', '起漲差 ≤（分）', 'opt', '', '空白＝只顯示、不篩選'],
   ['require_burst', '要同時爆量', 'bool', '', '同一個 5 分鐘兩檔都爆量（≥ 3 倍自己的中位數）'],
-  ['dense', '群內至少', 'num', '', '每檔要跟群內這個比例的人都符合條件（0.7＝七成）'],
+  ['group_method', '組群方式', 'sel', '', '七成規則＝每檔要跟群內「群內至少」比例的人都通過（預設）；社群偵測＝把通過的配對連成網，再依「群內連線比隨機預期多」切成一群群（模組度，研究 m3），不要求每檔都互相通過，可能找出比較大、比較鬆的群'],
+  ['dense', '群內至少', 'num', '', '每檔要跟群內這個比例的人都符合條件（0.7＝七成）；組群方式用社群偵測時不看這個'],
   ['min_size', '最少幾檔', 'int', '', ''],
 ];
 
@@ -46,12 +47,13 @@ export const FIELDS = [
 export function condText(p) {
   const thr = p.excess_r_mode === 'adaptive' ? '每日自適應門檻' : p.excess_r;
   const intraday = p.intraday_basis && p.intraday_basis !== 'raw' ? `${BASES[p.intraday_basis]}後分時 R ≥ ${thr}` : `分時 R ≥ ${p.intraday_r}`;
-  return `日 R ≥ ${p.daily_r}（找法2 ${p.new_daily_r}）、${intraday}、高點差 ≤ ${p.peak_gap} 分、群內 ${p.dense}`;
+  return `日 R ≥ ${p.daily_r}（找法2 ${p.new_daily_r}）、${intraday}、高點差 ≤ ${p.peak_gap} 分、${p.group_method === 'community' ? '社群偵測' : `群內 ${p.dense}`}`;
 }
 
 export const BASES = { sector: '扣大盤＋類股', market: '扣大盤', raw: '原始', pca1: '扣第 1 主成分' };
 export const EXCESS_MODES = { fixed: '固定', adaptive: '每日自適應' };
-const SEL_OPTIONS = { intraday_basis: BASES, excess_r_mode: EXCESS_MODES }; // kind 'sel': its options, the first the default
+export const GROUP_METHODS = { dense: '七成規則', community: '社群偵測' };
+const SEL_OPTIONS = { intraday_basis: BASES, excess_r_mode: EXCESS_MODES, group_method: GROUP_METHODS }; // kind 'sel': its options, the first the default
 
 export function queryOf(method, params) {
   const q = new URLSearchParams({ method });
@@ -475,7 +477,7 @@ const DEFAULTS = {
   min_volume_lots: 300,
   new_min_volume_lots: 300,
   daily_r: 0.8, daily_window: 20, new_daily_r: 0.8, new_daily_window: 10, pool_top: 50,
-  intraday_basis: 'sector', intraday_r: 0.5, excess_r: 0.4, excess_r_mode: 'fixed', intraday_sessions: 3, peak_gap: 8, start_gap: '', require_burst: false, dense: 0.7, min_size: 2,
+  intraday_basis: 'sector', intraday_r: 0.5, excess_r: 0.4, excess_r_mode: 'fixed', group_method: 'dense', intraday_sessions: 3, peak_gap: 8, start_gap: '', require_burst: false, dense: 0.7, min_size: 2,
   vol_ratio_window: 5,
   groupings: DEFAULT_GROUPINGS, pool_sources: Object.keys(SOURCES),
 };
