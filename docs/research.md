@@ -4,9 +4,11 @@
 
 - 新實驗做完，就在對應章節補上一段，或新增一節。
 - 結論被推翻時，不要刪除舊結論，改成刪除線並寫上新數字與日期。
-- 實驗程式在兩條研究分支（不合併回 main，只當參考）：
-  - `night-shift/study-2026-10-25` → `research/`：痛點（exp1～exp8）。說明在 `research/REPORT.md`，原始輸出在 `research/out/*.json`。
-  - `night-shift/methods-2026-10-25` → `research/`：大神做法（m1～m6）。說明在 `research/REPORT.md`。
+- 實驗程式（2026-10-26 從兩條研究分支併回 main）：
+  - `research/study/`：痛點（exp1～exp8）。說明在 `REPORT.md`，原始輸出在 `out/*.json`。
+  - `research/methods/`：大神做法（m1～m6、m2c）。說明在 `REPORT.md`，原始輸出在 `out/`。
+  - `research/money_flow/`：之後的驗證（回測名單、交集、延續性、隔天放空）。
+  - 這些程式的 `common.py` 直接讀 `data/history.sqlite`，有些要 App 在 :8765 跑著。
 - 研究用的資料在 `data/history.sqlite`，不進版控。
 
 ## 共同前提與注意

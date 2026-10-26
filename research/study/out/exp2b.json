@@ -1,0 +1,20 @@
+{
+ "default (0.4)": {
+  "cand": 21598,
+  "cand_pass": 606,
+  "cross": 90568,
+  "cross_pass": 77
+ },
+ "excess_r=0.5": {
+  "cand": 21598,
+  "cand_pass": 309,
+  "cross": 90568,
+  "cross_pass": 31
+ },
+ "excess_r=0.6": {
+  "cand": 21598,
+  "cand_pass": 137,
+  "cross": 90568,
+  "cross_pass": 21
+ }
+}

@@ -94,7 +94,7 @@ export function evidenceItems(f, ext, ev) {
 /**
  * How often each check also says ✓ for a random pair of the same day (the base rate): a ✓ that random
  * pairs get half the time says little, one they get 5% of the time says a lot. Measured on the cached
- * data, 2026-10-25 (branch night-shift/methods-2026-10-25, research/m5_weights.py: 10,557 random pairs of
+ * data, 2026-10-25 (research/methods/m5_weights.py: 10,557 random pairs of
  * the 300 most traded, 15 days); 隨機 is 10% by its own definition (above the 90th percentile).
  * Shown only — the ✓ count is unchanged.
  */

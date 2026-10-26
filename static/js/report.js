@@ -219,7 +219,7 @@ export function hotHtml(list, stats, wide = null) {
   const pctCell = (v) => `<td>${p(v)}</td>`;
   const all = tableRows.length
     ? `<p class="rp-line muted">所有已存的日子（${wide.days} 天，${escapeHtml(wide.first || '')}～${escapeHtml(wide.last || '')}）成員的隔天表現：</p>
-      <table class="grid rp-next" title="證據數＝伺服器端 5 項（扣指數、隨機、同爆量、同分鐘、同漲跌）的 ✓ 數，沒資料不算 ✓；同爆量、同分鐘要 1 分 K（約 30 天內），所以 ✓ ≥ 4 只會出現在最近的日子。研究（study 分支 exp5）：證據越少、後續越強">
+      <table class="grid rp-next" title="證據數＝伺服器端 5 項（扣指數、隨機、同爆量、同分鐘、同漲跌）的 ✓ 數，沒資料不算 ✓；同爆量、同分鐘要 1 分 K（約 30 天內），所以 ✓ ≥ 4 只會出現在最近的日子。研究（research/study exp5）：證據越少、後續越強">
       <thead><tr><th class="l">組合</th><th>組／檔次</th><th>開盤</th><th>收盤</th><th>扣大盤</th><th>開高走低</th><th>收黑</th></tr></thead><tbody>${tableRows
         .map(([label, x]) => `<tr><td class="l">${escapeHtml(label)}</td><td>${x.groups}／${x.stocks}</td>${pctCell(x.gap)}${pctCell(x.close)}${pctCell(x.excess)}<td>${x.fade == null ? '—' : `${x.fade.toFixed(0)}%`}</td><td>${x.down == null ? '—' : `${x.down.toFixed(0)}%`}</td></tr>`)
         .join('')}</tbody></table>`
@@ -312,7 +312,7 @@ export function reportText(date, index, list, rows, hotStats = null, shapes = []
 
 // ---- HTML ---------------------------------------------------------------------------------------
 
-const CHASE_TIP = '落後股今天帶量上漲（量比 ≥ 1.5），而且平常跟這組高度連動（20 日相關 ≥ 0.6）。回測 60 天（study 分支 exp8）：這類隔天平均跑輸大盤 1.63%，只有 22% 收紅；前後半段分開驗證，隔天都一樣弱（勝率 23%、20%），但 5 天後方向不一致——只適合當「隔天別追」的提醒';
+const CHASE_TIP = '落後股今天帶量上漲（量比 ≥ 1.5），而且平常跟這組高度連動（20 日相關 ≥ 0.6）。回測 60 天（research/study exp8）：這類隔天平均跑輸大盤 1.63%，只有 22% 收紅；前後半段分開驗證，隔天都一樣弱（勝率 23%、20%），但 5 天後方向不一致——只適合當「隔天別追」的提醒';
 
 const CROSS_TIP = '同步那天，這檔同時和兩批「完全不同的股票」各自同步（不是同一群股票換個分類），像是多路資金都在找它。回測 60 天（research/money_flow/intersection.py）：這類在回測 10 日線時，10 天後中位數跑贏大盤 7.4%（勝率 82%，40 筆），其他只有 −1.0%（45%）；但 15 筆集中在 7/31 同一天，扣掉後中位數 +2.9%（73%）。前後半段都成立，樣本仍少。只是統計，不是交易建議';
 
@@ -325,7 +325,7 @@ export function pullbackHtml(res) {
     .map((x) => `<li><button type="button" class="rp-stock" data-code="${escapeHtml(x.code)}">${escapeHtml(x.name)}</button>
       ${x.cross ? `<b class="up" title="${escapeHtml(CROSS_TIP)}">⭐ 跨組交集</b> ` : ''}<small class="muted">收 ${x.close}／10 日線 ${x.ma}（${fmtPct(x.gap_pct)}）；${escapeHtml(x.since.slice(5))} 與 ${escapeHtml(x.with.join('、'))} 同步</small></li>`)
     .join('');
-  return `<div class="rp-pull" title="過去 10 個交易日內同步很強（證據 ✓ ≥ 4，或扣指數 R ≥ 0.6）的組合成員，今天第一次收在 10 日線以下：等下一波資金，而不是追同步當天。回測 60 天（study 分支 exp8）：在這種回測點買，10 天後平均跑贏大盤 4.31%（勝率 55%），同步當天就買只有 1.63%（42%）。只是統計，不是交易建議">
+  return `<div class="rp-pull" title="過去 10 個交易日內同步很強（證據 ✓ ≥ 4，或扣指數 R ≥ 0.6）的組合成員，今天第一次收在 10 日線以下：等下一波資金，而不是追同步當天。回測 60 天（research/study exp8）：在這種回測點買，10 天後平均跑贏大盤 4.31%（勝率 55%），同步當天就買只有 1.63%（42%）。只是統計，不是交易建議">
     <h3 class="rp-h">回測 10 日線 <small class="muted">${list.length} 檔；同步族群的觀察名單</small></h3><ul class="rp-hot-list">${rows}</ul></div>`;
 }
 
@@ -334,7 +334,7 @@ export function laggardsHtml(g) {
   const l = g.laggards;
   if (!l?.stocks?.length) return '';
   const cells = l.stocks.map((s) => `<button type="button" class="rp-stock" data-code="${escapeHtml(s.code)}" title="${escapeHtml(s.code)}：開資訊卡">${escapeHtml(s.name)} <small class="${s.change_pct > 0 ? 'up' : s.change_pct < 0 ? 'down' : ''}">${fmtPct(s.change_pct)}</small>${s.chase ? ` <b class="down" title="${escapeHtml(CHASE_TIP)}">⚠ 帶量跟漲</b>` : ''}</button>`);
-  return `<div class="rp-line" title="同一個已知分類裡、今天漲不到這組平均一半的股票（成交值大的先列）。回測（study 分支 exp6，60 天）：這些股票之後 5 天平均只跑贏大盤 0.74%，遠不如組合本身的 +2.22%——資金多半留在原本那幾檔，沒有明顯擴散。只是參考，不是買進建議"><span class="muted">同族群未跟上（${escapeHtml(l.label)}：${escapeHtml(l.group)}）</span> ${cells.join(' ')}</div>`;
+  return `<div class="rp-line" title="同一個已知分類裡、今天漲不到這組平均一半的股票（成交值大的先列）。回測（research/study exp6，60 天）：這些股票之後 5 天平均只跑贏大盤 0.74%，遠不如組合本身的 +2.22%——資金多半留在原本那幾檔，沒有明顯擴散。只是參考，不是買進建議"><span class="muted">同族群未跟上（${escapeHtml(l.label)}：${escapeHtml(l.group)}）</span> ${cells.join(' ')}</div>`;
 }
 
 /** 籌碼集中度 of the members with 分點 stored (the after-close snapshot), one line; '' without any. */

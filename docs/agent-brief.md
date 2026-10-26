@@ -78,9 +78,9 @@ D:\git\open-market，FastAPI + ECharts／vanilla JS，資料存在 SQLite `data/
 
 **完整數字、使用者的決定和之後的更新都在 [research.md](research.md)；還沒決定的項目在 [backlog.md](backlog.md)。** 下面是當時的摘要。
 
-詳細數字在研究分支：
-- `night-shift/study-2026-10-25`（痛點）：research/REPORT.md
-- `night-shift/methods-2026-10-25`（大神做法）：research/REPORT.md
+詳細數字和實驗程式：
+- `research/study/`（痛點，exp1～exp8）：REPORT.md
+- `research/methods/`（大神做法，m1～m6）：REPORT.md
 
 1. **扣指數已經是每檔估 β 的殘差**，不是直接相減。實測 β 從 0.23 到 1.84 都有；直接相減（β = 1）反而讓同產業的相關被灌水。
 2. **偽陽性不是瓶頸**：同日跨產業隨機配對只有 0.09% 通過；BH 偽發現率 5% 的切點是 R ≈ 0.17，0.4 已經很保守。

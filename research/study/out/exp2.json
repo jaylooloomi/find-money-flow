@@ -1,0 +1,30 @@
+{
+ "lag": 5,
+ "days": 51,
+ "results": {
+  "default (0.4)": {
+   "real_pairs": 12010,
+   "real_pass": 491,
+   "placebo_pairs": 12010,
+   "placebo_pass": 2
+  },
+  "excess_r=0.5": {
+   "real_pairs": 12010,
+   "real_pass": 265,
+   "placebo_pairs": 12010,
+   "placebo_pass": 1
+  },
+  "excess_r=0.6": {
+   "real_pairs": 12010,
+   "real_pass": 123,
+   "placebo_pairs": 12010,
+   "placebo_pass": 1
+  },
+  "excess 0.4 + peak 5": {
+   "real_pairs": 12010,
+   "real_pass": 491,
+   "placebo_pairs": 12010,
+   "placebo_pass": 2
+  }
+ }
+}
